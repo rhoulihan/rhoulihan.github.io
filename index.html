@@ -157,7 +157,7 @@
             <div tabindex="-1" id="divTabs" style="width: 90%; margin-left: 5%;">
                 <div tabindex="-1" id="tabDiv" class="tab" style="display: none;">
                     <button tabindex="-1" id="tableDivButton" style="display:inline;" class="tablinks active" onclick="showTab(event, 'tablediv')">
-                        <div tabindex="-1" class="topright"><input tabindex="-1" class="addGSI" title="Add Index" type="image" src="./img/add.png" style="cursor:pointer; float:right; background:transparent; border:0; outline:none;" border=0 width="20" height="20"><input tabindex="-1" onclick="selectTable()" title="Switch Table" type="image" src="./img/swap.png" style="cursor:pointer; float:right; background:transparent; border:0; outline:none;" border=0 width="20" height="20"><input tabindex="-1" onclick="runQuery()" title="Run Query" type="image" src="./img/binoculars.png" style="display:hidden; cursor:pointer; float:right; background:transparent; border:0; outline:none;" border=0 width="20" height="20"></div>
+                        <div tabindex="-1" class="topright"><input tabindex="-1" class="addGSI" title="Add Index" type="image" src="./img/add.png" style="cursor:pointer; float:right; background:transparent; border:0; outline:none;" border=0 width="20" height="20"><input tabindex="-1" onclick="selectTable()" title="Switch Table" type="image" src="./img/swap.png" style="cursor:pointer; float:right; background:transparent; border:0; outline:none;" border=0 width="20" height="20"><input tabindex="-1" onclick="showQuery('run')" title="Run Query" type="image" src="./img/binoculars.png" style="display:hidden; cursor:pointer; float:right; background:transparent; border:0; outline:none;" border=0 width="20" height="20"></div>
                         <h2 class="basetable_title"></h2>
                     </button>
                 </div>
@@ -172,7 +172,7 @@
 
     <!-- Question Dialogue -->
     <div id="alertModal" class="modal">
-        <div class="modal-content">
+        <div style="width: 500px;" class="modal-content">
             <div class="row">
                 <div id="alertTitle">
                     <h1 style="text-align: center"></h1>
@@ -189,7 +189,7 @@
     
     <!-- Import OneTable Dialogue -->
     <div id="oneTableModal" class="modal">
-        <div class="modal-content">
+        <div style="width: 500px;" class="modal-content">
             <div class="row">
                 <div>
                     <h1 style="text-align: center">Import OneTable Schema</h1>
@@ -207,7 +207,7 @@
     
     <!-- Remove Attribute Dialogue -->
     <div id="removeAttributeModal" class="modal">
-        <div class="modal-content">
+        <div style="width: 500px;" class="modal-content">
             <div class="row">
                 <div id="removeAttrTitle">
                     <h1 style="text-align: center">Delete Attribute</h1>
@@ -226,7 +226,8 @@
     
     <!-- Select File Dialogue -->
     <div id="fileDiv" class="modal">
-        <div class="modal-content">
+        <div style="width: 400px;" class="modal-content">
+            <h1 style="text-align: center">Load Model</h1>
             <label class="key_label">Select a model:</label>
             <div class="key_group">
                 <input id="importFile" style="margin-top: 5px;" type="file">
@@ -239,7 +240,7 @@
     
     <!-- Select Table Dialogue -->
     <div id="selectTableDiv" class="modal">
-        <div class="modal-content">
+        <div style="width: 500px;" class="modal-content">
             <h1 style="text-align: center">Change Table</h1>
             <div class="centered-buttons">
                 <label class="key_label">Select a Table to view:</label>
@@ -254,7 +255,7 @@
     
     <!-- Create Model Dialogue -->
     <div id="createModelDiv" class="modal">
-        <div class="modal-content">
+        <div style="width: 500px;" class="modal-content">
             <h1 style="text-align: center">Create Model</h1>
             <label class="key_label">Name</label>
             <input id="txtModelName" type="text" autocomplete="off">
@@ -274,7 +275,7 @@
     
     <!-- Define Mapping Dialogue -->
     <div id="defineMapDiv" class="modal">
-        <div class="modal-content">
+        <div style="width: 500px;" class="modal-content">
             <h1 style="text-align: center">Edit Mapping Function</h1>
             <label id="lblEditMap" class="key_label">Mapping Function:</label>
             <input id="txtMapFunction" type="text">
@@ -292,29 +293,80 @@
         </div>
     </div>
     
-    <!-- Query Dialogue -->
-    <div id="quertyDiv" class="modal">
-        <div class="modal-content">
-            <h1 style="text-align: center">Define a Query</h1>
-            <label id="lblPKcond" class="key_label">Partition Key Value:</label>
-            <input id="txtPKval" type="text">
-            <label id="lblSKcond" class="key_label">Sort Key Condition:</label>
-            <div id="selectSKcond">
-                <select id="selectType" onchange="setType()">
-                    <option selected="true" disabled="disabled">&gt;</option>
-                    <option selected="true" disabled="disabled">&lt;</option>
-                    <option selected="true" disabled="disabled">&ge;</option>
-                    <option selected="true" disabled="disabled">&le;</option>
-                    <option selected="true" disabled="disabled">&#61;</option>
-                    <option selected="true" disabled="disabled">begins_with</option>
-                    <option selected="true" disabled="disabled">between</option>
+    <!-- Run Query Dialogue -->
+    <div id="queryDiv" class="modal">
+        <div style="width: 575px;" class="modal-content">
+            <h1 style="text-align: center">Run a Query</h1>
+            <select id="selectQuery" onchange="setConditions()">
+                <option selected="true" disabled="disabled" value="none">--Select a Query--</option>
+            </select>
+            <div id="queryConditions" style="display:none;">
+                <label id="lblQueryName" class="key_label" style="display: none;">Query Name:</label>
+                <input id="txtQueryName" type="text" style="display: none;">
+                <select id="selectTableOrIndex">
+                    <option selected="true" disabled="disabled">--Select Table/Index--</option>
                 </select>
-            </div>
-            <input id="txtSKval" type="text">
-            <br>
+                <label id="lblPKcond" class="key_label">Partition Key Value:</label>
+                <input id="txtPKval" type="text" style="width: 150px;">
+                <label class="key_label">Sort Key Condition:</label>
+                <div id="selectSKcond">
+                    <select id="selectOp" onchange="setOp('sort')">
+                        <option selected="true" disabled="disabled" value="none">--Select an Operation--</option>
+                        <option value=">">&gt;</option>
+                        <option value="<">&lt;</option>
+                        <option value=">=">&ge;</option>
+                        <option value="<=">&le;</option>
+                        <option value="=">&#61;</option>
+                        <option value="begins">begins_with</option>
+                        <option value="between">between</option>
+                    </select>
+                    <label class="key_label" style="display: inline;">Value:</label>
+                    <input id="txtSKval" type="text" style="display: inline; width: 150px;">
+                    <label id="lblSKendVal" class="key_label" style="display: inline; visibility: hidden;">&nbsp;&nbsp;End Value:</label>
+                    <input id="txtSKendVal" type="text" style="display: inline; width: 150px; visibility: hidden;">
+                </div>
+                <div id="filterArea" style="display: none;">
+                    <label class="key_label">Filter Condition:</label>
+                    <div id="selectFilter" style="overflow:scroll; height:190px;">
+                        <div id="filterDiv" class="filterDiv">
+                            <select id="selectAndOr" hidden>
+                                <option selected="true" value="AND">AND</option>
+                                <option value="OR">OR</option>
+                            </select>
+                            <label class="key_label" style="display: inline;">Attribute:</label>
+                            <input id="txtFilterAttr" type="text" style="display: inline; width: 180px;">
+                            <label class="key_label" style="display: inline;">Type:</label>
+                            <select id="selectAttrType" style="display: inline;">
+                                <option value="S">String</option>
+                                <option value="N">Number</option>
+                                <option value="B">Boolean</option>
+                            </select>
+                            <br>
+                            <select id="filterOp" class="filterOp" onchange="setOp('filter')">
+                                <option selected="true" value="default" disabled="disabled">--Select an Operation--</option>
+                                <option value=">">&gt;</option>
+                                <option value="<">&lt;</option>
+                                <option value=">=">&ge;</option>
+                                <option value="<=">&le;</option>
+                                <option value="=">&#61;</option>
+                                <option value="begins">begins_with</option>
+                                <option value="between">between</option>
+                                <option value="contains">contains</option>
+                                <option value="in">in</option>
+                            </select>
+                            <label class="key_label" style="display: inline;">Value:</label>
+                            <input id="txtFilterVal" type="text" style="display: inline; width: 150px;">
+                            <label id="lblFilterEndVal" class="key_label" style="display: inline; visibility: hidden;">&nbsp;&nbsp;End Value:</label>
+                            <input id="txtFilterEndVal" type="text" style="display: inline; width: 150px; visibility: hidden;">
+                        </div>
+                    </div>
+                </div>
+                </div>
+                <br>
             <div class="centered-buttons">
+                <button id="btnAddFilter" class="btnOK" onclick="addFilter()" hidden>Add Filter</button>
                 <button class="cancel">CANCEL</button>
-                <button id="btnDefineMap" class="btnOK">OK</button>
+                <button id="btnDefineMap" class="btnOK" onclick="buildQuery()">OK</button>
             </div>
         </div>
     </div>
@@ -322,7 +374,7 @@
     <!-- Create Table/Index Dialogue -->
     <div class="modal fade in" id="createTableOrIndex" role="dialog">
             <!-- Modal content-->
-            <div class="modal-content">
+            <divstyle="width: 500px;"  class="modal-content">
                     <div class="row">
                         <div id="title">
                             <h1 style="text-align: center"></h1>

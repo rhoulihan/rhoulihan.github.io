@@ -44,7 +44,9 @@ var // container for the Model schema
     // container for Attribute cell metadata
     cellId = {},
     // the Item clipboard
-    pasteItem = {};
+    pasteItem = {},
+    numFilters = 0,
+    match_data = [];
 
 
 // Utility method to escape characters in an element id that will mess with jquery
@@ -462,125 +464,335 @@ function show_table() {
     });
 }
 
+function showQuery(caller) {
+    initQuery();
+    
+    $("#selectQuery").show();
+    $("#queryDiv").show();
+}
 
-function runQuery(expression) {
-    while (expression.indexOf("= ") >= 0 || expression.indexOf("< ") >= 0 || expression.indexOf("> ") >= 0 || expression.indexOf(" =") >= 0
-           || expression.indexOf(" <") >= 0 || expression.indexOf(" >") >= 0) {
-        expression.replace(/= /g, "=");
-        expression.replace(/> /g, ">");
-        expression.replace(/< /g, "<");
-        expression.replace(/ =/g, "=");
-        expression.replace(/ >/g, ">");
-        expression.replace(/ >/g, ">");
-        expression.removeAll("\"");
-        expression.removeAll("'");
+function initQuery() {
+    var name = model.DataModel[modelIndex].TableName;
+    
+    $(".remove").remove();
+    $("#selectQuery").val($("#selectQuery option:first").val());
+    $("#selectTableOrIndex").val($("#selectTableOrIndex option:first").val());
+    $("#selectOp").val($("#selectOp option:first").val());
+    $("#filterOp").val($("#filterOp option:first").val());
+    $("#selectAttrType").val($("#selectAttrType option:first").val());
+    
+    $("#txtQueryName").val("");
+    $("#txtPKval").val("");
+    $("#txtSKval").val("");
+    $("#txtSKendVal").val("");
+    $("#txtFilterAttr").val("");
+    $("#txtFilterValue").val("");
+    $("#txtFilterEndValue").val("");
+    $("#btnAddFilter").hide();
+    $("#queryConditions").css("display", "none");
+    $("#filterArea").css("display", "none");
+    $("#queryDiv").hide();
+    
+    match_data = [];
+    loadDataModel();
+    
+    $("#selectTableOrIndex").append(`<option value="${name}" class="remove">${name}</option>`);
+    $.each(model.DataModel[modelIndex].GlobalSecondaryIndexes, function (idx, gsi) {
+        $("#selectTableOrIndex").append(`<option value="${gsi.IndexName}" class="remove">${gsi.IndexName}</option>`)      
+    });
+        
+    $.each(datamodel.SavedQuery, function (name, query) {
+        $("#selectQuery").append(`<option value="${name}" class="remove">${name}</option>`)      
+    });
+    $("#selectQuery").append(`<option value="new" class="remove">Define new query...</option>`);
+}
+
+function setOp(type) {
+    if (type == 'sort') {
+        if ($("#selectOp").val() == 'between') {
+            $("#lblSKendVal").css("visibility", "visible");
+            $("#txtSKendVal").css("visibility", "visible");
+        } else {
+            $("#lblSKendVal").css("visibility", "hidden");
+            $("#txtSKendVal").css("visibility", "hidden");
+        }
+    } else {
+        $.each($(".filterOp"), function (idx, select) {
+            if (select.value == 'between') {
+                $("#lblFilterEndVal" + select.id.substring(8)).css("visibility", "visible");
+                $("#txtFilterEndVal" + select.id.substring(8)).css("visibility", "visible");        
+            } else {
+                $("#lblFilterEndVal" + select.id.substring(8)).css("visibility", "hidden");
+                $("#txtFilterEndVal" + select.id.substring(8)).css("visibility", "hidden"); 
+            }
+        });
+    }
+}
+
+function addFilter() {
+    if ($("#filterArea").is(":hidden")) {
+        numFilters = 0;
+        $("#filterArea").show();
+    }
+    else {
+        var clone = $("#filterDiv").clone(true);
+        clone.attr("id", "filterDiv" + numFilters);
+        clone.attr("class", "filterDiv remove");
+        $("#selectFilter").append(clone);
+        $("#filterDiv" + numFilters).find(">:first-child").show();
+        
+        $.each($("#filterDiv" + numFilters).children(), function (idx, child) {
+            child.id = child.id + numFilters; 
+        });
+          
+        $("#selectFilter" + numFilters).val($("#selectFilter" + numFilters + " option:first").val());
+        $("#selectAttrType" + numFilters).val($("#selectAttrType" + numFilters + " option:first").val());
+        $("#txtFilterVal" + numFilters).val("");
+        $("#txtFilterEndVal" + numFilters).val("");
+        $("#txtFilterAttr" + numFilters).val("");
+        
+        $("#lblFilterEndVal" + numFilters).css("visibility", "hidden");
+        $("#txtFilterEndVal" + numFilters).css("visibility", "hidden"); 
+        
+        numFilters++;
     }
     
-    expression.replace(/=/g, "= ");
-    expression.replace(/>/g, " > ");
-    expression.replace(/</g, " < ");
+    $("#selectFilter").scrollTop($("#selectFilter")[0].scrollHeight);
+}
+
+function buildQuery() {
+    var query = {},
+        test = {};
     
-    var queryData = [],
-        counter = 0,
-        chars = expression.split(""),
-        token = "",
-        tokens = [],
-        comparators = [">", ">=", "<>", "<=", "<", "="],
-        conditions = {};
+    query.PK = $("#txtPKval").val();
+    query.SK = {};
+    query.SK.condition = $("#selectOp").val();
+    query.SK.values = [];
+    query.SK.values.push($("#txtSKval").val());
+    query.view = $("#selectTableOrIndex").val();
     
-    $.each(chars, function (idx, val) {
-        if (val == "(")
-            counter++;
-        else if (val == ")") 
-            counter--;
-        else
-            if (val != " " || counter > 0)
-                token = token + val;
-            else {
-                    tokens.push(token);
-                    token = "";
-                }
+    if ( query.SK.condition == "between" )
+        query.SK.values.push($("#txtSKendVal").val());
+        
+    query.filter = [];
+    
+    $.each($(".filterDiv"), function (count, div) {
+        if (!$("#filterArea").is(":visible"))
+            return;
+        
+        var divId = count > 0 ? count - 1 : "";
+        
+        if (divId >= 0)
+            test.operator = $("#selectAndOr" + divId).val();
+        
+        test.attribute = $("#txtFilterAttr" + divId).val();
+        test.type = $("#selectAttrType" + divId).val();
+        test.condition = $("#filterOp" + divId).val();
+        test.values = [];
+        test.values.push($("#txtFilterVal" + divId).val());
+        
+        if (test.condition == "between")
+            test.values.push($("#txtFilterEndVal" + divId).val());
+        
+        query.filter.push(test);
+        test = {};
     });
-                
-    tokens.push(token);
     
-    if (!tokens.includes(partition_key) || tokens[tokens.indexOf(partition_key) + 1] != "=") {
-        alert("Query must include Partition Key ['" + partition_key + "'] equality condition.");
+    if (!datamodel.hasOwnProperty("SavedQuery"))
+        datamodel.SavedQuery = {};
+    
+    datamodel.SavedQuery[$("#txtQueryName").val()] = query;
+    
+    runQuery($("#txtQueryName").val());
+}
+
+function setConditions() {
+    var query = $("#selectQuery").val();
+    
+    $("#lblQueryName").css("display", "none");
+    $("#txtQueryName").css("display", "none");
+    $("#selectQuery").css("display", "none");
+    
+    $("#queryConditions").show();
+    $("#btnAddFilter").show();
+    
+    if (query == "new") {
+        $("#lblQueryName").show();
+        $("#txtQueryName").show();
         return;
     }
     
-    var logicals = ["AND", "OR", "IN"];
+    query = datamodel.SavedQuery[query];
+    $("#selectTableOrIndex").val(query.view);
+    $("#txtPKval").val(query.PK);
+    $("#selectOp").val(query.SK.condition);
+    $("#txtSKval").val(query.SK.values[0]);
     
-    $.each(tokens, function (idx, token) {
-        if (logicals.includes(token)) {
-        }
-    });
+    $("#txtSKendVal").css("display", "none");
     
-    conditions[partition_key] = {
-        condition: "=",
-        value: tokens[tokens.indexOf(partition_key) + 2]
+    if (query.SK.condition == "between") {
+        $("#txtSKendVal").val(query.SK.values[1]);
+        $("#txtSKendVal").show();
     }
     
-    $.each(json_data, function(idx, item) {
-        if (item.hasOwnProperty(partition_key) && item.hasOwnProperty(sort_key) && getValue(item[partition_key]) == conditions[partition_key].value) {
-            var match = true,
-                parts,
-                skip = false;
+    $.each(query.filter, function (idx, test) {
+        var divId = idx > 0 ? idx - 1 : "";
+        addFilter();
+        
+        if (divId != "")
+            $("#selectAndOr" + divId).val(test.operator);
+        
+        $("#txtFilterAttr" + divId).val(test.attribute);
+        $("#selectAttrType" + divId).val(test.type);
+        $("#filterOp" + divId).val(test.condition);
+        $("#txtFilterVal" + divId).val(test.values[0]);
+        
+        if (test.condition == "between")
+            $("#txtFilterEndVal" + divId).val(test.values[1]);
+    });
+}
+
+function runQuery(name) {
+    var query = datamodel.SavedQuery[name],
+        PK = "",
+        SK = "";
+    
+    match_data = [];
+    json_data = datamodel.TableData;
+    
+    if (query.view == datamodel.TableName) {
+        PK = table.partition_key;
+        SK = table.sort_key
+    } else {
+        $.each(datamodel.GlobalSecondaryIndexes, function (idx, gsi) {
+            if (gsi.IndexName == query.view) {
+                PK = gsi.KeyAttributes.PartitionKey.AttributeName;
+                SK = gsi.KeyAttributes.SortKey.AttributeName;
+            }
+        });
+    }
+    
+    $.each(json_data, function (idx, item) {
+        if (item.hasOwnProperty(PK) && getValue(item[PK]) == query.PK) {
+            var test = {},
+                pass = true;
+            test.type = table.sortkey_datatype;
+            test.attribute = table.sort_key;
+            test.values = query.SK.values;
+            test.condition = query.SK.condition;
             
-            $.each(tokens, function(idx1, token) {
-                if (token.indexOf(" ") == -1) {
-                    parts = token.split("(");
-                    switch (parts[0]) {
-                        case ">":
-                        case ">=":
-                            break;
-                                
-                        case "<":
-                        case "<=":
-                            break;
-                                
-                        case ">":
-                        case ">=":
-                            break;
-                                
-                        case "=":
-                            break;
-                                
-                        case "<>":
-                            break;
-                            
-                        case "contains":
-                            break;
-                            
-                        case "between":
-                            break;
-                            
-                        case "in":
-                            break;
-                            
-                        case "attribute_exists":
-                            break;
-                            
-                        case "attribute_not_exists":
-                            break;
-                            
-                        case "attribute_type":
-                            break;
-                            
-                        case "begins_with":
-                            break;
-                            
-                        case "size":
-                            break;
-                            
-                        default:
-                            break;
-                    }
-                } else
-                    runQuery(token);
-            });
+            // test the sort condition
+            if (evaluate(item, test)) {
+                // test each filter condition
+                $.each(query.filter, function (idx, filter) {
+                    if (filter.operator == "OR")
+                        if (pass)
+                            // if pass is still true on an OR operator the test is done
+                            return false;
+                        else
+                            // if pass is false on OR operator then continue testing
+                            pass = true;
+                    
+                    if (pass)
+                        pass = evaluate(item, filter);
+                });
+            }
+                
+            // add the item if it passed all condition checks
+            if (pass)
+                match_data.push(item);
         }
     });
+    
+    $("#queryDiv").hide();
+    $("#runQueryDiv").hide();
+    $(".remove").remove();
+    $("#filterArea").hide();
+    loadDataModel();
+}
+
+function evaluate(item, test) {
+    var value = "",
+        comparevalues = [];
+    
+    switch (test.type) {
+        case "Boolean":
+            value = getValue(item[test.attribute]) == true;
+            $.each(test.values, function (idx, value) {
+                test.values[idx].replace(value == "true");
+            });
+            break;
+            
+        case "N":
+        case "Number":
+            value = parseFloat(getValue(item[test.attribute]));
+            $.each(test.values, function (idx, value) {
+                test.values[idx].replace(parseFloat(value));
+            });
+            break;
+            
+        case "S":
+        case "String":
+            value = getValue(item[test.attribute]);
+            break;
+    }
+    
+    var testVal = false;
+    switch (test.condition) {
+        case ">":
+            if (value > test.values[0])
+                testVal = true;
+            break;
+            
+        case ">=":
+            if (value >= test.values[0])
+                testVal = true;
+            break;
+            
+        case "<":
+            if (value < test.values[0])
+                testVal = true;
+            break;
+            
+        case "<=":
+            if (value <= test.values[0])
+                testVal = true;
+            break;
+            
+        case "=":
+            if (value == test.values[0])
+                testVal = true;
+            break;
+            
+        case "between":
+            var startVal = test.values[0],
+                endVal = test.values[1];
+            
+            if (startVal > endVal) {
+                startVal = endVal;
+                endVal = test.values[0];
+            }
+            
+            if (value > test.values[0] && value < test.values[1])
+                testVal = true;
+            break;
+            
+        case "contains":
+            if (value.indexOf(test.values[0]) >= 0)
+                testVal = true;
+            break;
+            
+        case "in":
+            $.each(test.values, function (idx, val) {
+                if (value == val) {
+                    testVal = true;
+                    return false;
+                }
+            });
+            break;
+    }
+    
+    return testVal;
 }
 
 // generate the HTML for the table
@@ -977,6 +1189,9 @@ function loadDataModel() {
     
     runMapFunctions(datamodel.TableData);
     json_data = datamodel.TableData;
+    
+    if (match_data.length > 0)
+        json_data = match_data;
 
     if (!table.hasOwnProperty(("partition_key"))) {
         alert("Invalid Table Specification.");
@@ -1580,6 +1795,8 @@ $(document).ready(function() {
         $("#selectTypeDiv").hide();
         $("#txtMapFunction").prop("disabled", false);
         $("#btnDefineMap").prop("disabled", false);
+        
+        initQuery();
     });
     
     // click handler for Create Model
