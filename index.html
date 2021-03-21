@@ -308,10 +308,10 @@
                 </select>
                 <label id="lblPKcond" class="key_label">Partition Key Value:</label>
                 <input id="txtPKval" type="text" style="width: 150px;">
-                <label class="key_label">Sort Key Condition:</label>
-                <div id="selectSKcond">
+                <div id="skDiv" style="display: none;">
+                    <label class="key_label">Sort Key Condition:</label>
                     <select id="selectOp" onchange="setOp('sort')">
-                        <option selected="true" disabled="disabled" value="none">--Select an Operation--</option>
+                        <option selected="true" disabled="disabled" value="">--Select an Operation--</option>
                         <option value=">">&gt;</option>
                         <option value="<">&lt;</option>
                         <option value=">=">&ge;</option>
@@ -352,7 +352,7 @@
                                 <option value="begins">begins_with</option>
                                 <option value="between">between</option>
                                 <option value="contains">contains</option>
-                                <option value="in">in</option>
+                                <option value="in" disabled="disabled">in</option>
                             </select>
                             <label class="key_label" style="display: inline;">Value:</label>
                             <input id="txtFilterVal" type="text" style="display: inline; width: 150px;">
@@ -364,6 +364,7 @@
                 </div>
                 <br>
             <div class="centered-buttons">
+                <button id="btnAddSort" class="btnOK" onclick="addSortCondition()" hidden>Add Sort Condition</button>
                 <button id="btnAddFilter" class="btnOK" onclick="addFilter()" hidden>Add Filter</button>
                 <button class="cancel">CANCEL</button>
                 <button id="btnDefineMap" class="btnOK" onclick="buildQuery()">OK</button>

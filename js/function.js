@@ -489,7 +489,9 @@ function initQuery() {
     $("#txtFilterValue").val("");
     $("#txtFilterEndValue").val("");
     $("#btnAddFilter").hide();
+    $("#btnAddSort").hide();
     $("#queryConditions").css("display", "none");
+    $("#skDiv").css("display", "none");
     $("#filterArea").css("display", "none");
     $("#queryDiv").hide();
     
@@ -529,6 +531,11 @@ function setOp(type) {
     }
 }
 
+function addSortCondition() {
+    $("#btnAddSort").hide();
+    $("#skDiv").show();
+}
+
 function addFilter() {
     if ($("#filterArea").is(":hidden")) {
         numFilters = 0;
@@ -564,16 +571,18 @@ function buildQuery() {
     var query = {},
         test = {};
     
-    query.PK = $("#txtPKval").val();
-    query.SK = {};
-    query.SK.condition = $("#selectOp").val();
-    query.SK.values = [];
-    query.SK.values.push($("#txtSKval").val());
     query.view = $("#selectTableOrIndex").val();
+    query.PK = $("#txtPKval").val();
+    if ($("#selectOp").val() != null) {
+        query.SK = {};
+        query.SK.condition = $("#selectOp").val();
+        query.SK.values = [];
+        query.SK.values.push($("#txtSKval").val());
+
+        if ( query.SK.condition == "between" )
+            query.SK.values.push($("#txtSKendVal").val());
+    }
     
-    if ( query.SK.condition == "between" )
-        query.SK.values.push($("#txtSKendVal").val());
-        
     query.filter = [];
     
     $.each($(".filterDiv"), function (count, div) {
@@ -601,7 +610,8 @@ function buildQuery() {
     if (!datamodel.hasOwnProperty("SavedQuery"))
         datamodel.SavedQuery = {};
     
-    datamodel.SavedQuery[$("#txtQueryName").val()] = query;
+    if ($("#txtQueryName").val() != "")
+        datamodel.SavedQuery[$("#txtQueryName").val()] = query;
     
     runQuery($("#txtQueryName").val());
 }
@@ -609,12 +619,11 @@ function buildQuery() {
 function setConditions() {
     var query = $("#selectQuery").val();
     
-    $("#lblQueryName").css("display", "none");
-    $("#txtQueryName").css("display", "none");
     $("#selectQuery").css("display", "none");
     
     $("#queryConditions").show();
     $("#btnAddFilter").show();
+    $("#btnAddSort").show();
     
     if (query == "new") {
         $("#lblQueryName").show();
@@ -622,17 +631,23 @@ function setConditions() {
         return;
     }
     
+    $("#txtQueryName").val(query);
     query = datamodel.SavedQuery[query];
     $("#selectTableOrIndex").val(query.view);
     $("#txtPKval").val(query.PK);
-    $("#selectOp").val(query.SK.condition);
-    $("#txtSKval").val(query.SK.values[0]);
     
-    $("#txtSKendVal").css("display", "none");
+    if (query.hasOwnProperty("SK")) {
+        $("#skDiv").show();
+        $("#btnAddSort").hide();
+        $("#selectOp").val(query.SK.condition);
+        $("#txtSKval").val(query.SK.values[0]);
     
-    if (query.SK.condition == "between") {
-        $("#txtSKendVal").val(query.SK.values[1]);
-        $("#txtSKendVal").show();
+        $("#txtSKendVal").css("display", "none");
+
+        if (query.SK.condition == "between") {
+            $("#txtSKendVal").val(query.SK.values[1]);
+            $("#txtSKendVal").show();
+        }
     }
     
     $.each(query.filter, function (idx, test) {
@@ -668,6 +683,7 @@ function runQuery(name) {
             if (gsi.IndexName == query.view) {
                 PK = gsi.KeyAttributes.PartitionKey.AttributeName;
                 SK = gsi.KeyAttributes.SortKey.AttributeName;
+                return false;
             }
         });
     }
@@ -676,13 +692,17 @@ function runQuery(name) {
         if (item.hasOwnProperty(PK) && getValue(item[PK]) == query.PK) {
             var test = {},
                 pass = true;
-            test.type = table.sortkey_datatype;
-            test.attribute = table.sort_key;
-            test.values = query.SK.values;
-            test.condition = query.SK.condition;
             
-            // test the sort condition
-            if (evaluate(item, test)) {
+            // test the sort condition if there is one
+            if (query.hasOwnProperty("SK")) {
+                test.type = table.sortkey_datatype;
+                test.attribute = table.sort_key;
+                test.values = query.SK.values;
+                test.condition = query.SK.condition;
+                pass = evaluate(item, test);
+            }
+            
+            if (pass) {
                 // test each filter condition
                 $.each(query.filter, function (idx, filter) {
                     if (filter.operator == "OR")
@@ -690,7 +710,7 @@ function runQuery(name) {
                             // if pass is still true on an OR operator the test is done
                             return false;
                         else
-                            // if pass is false on OR operator then continue testing
+                            // if pass is false on OR operator then set it to true and continue testing
                             pass = true;
                     
                     if (pass)
