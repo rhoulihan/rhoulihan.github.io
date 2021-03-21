@@ -784,6 +784,11 @@ function evaluate(item, test) {
                 testVal = true;
             break;
             
+        case "begins":
+            if (value.startsWith(test.values[0]))
+                testVal = true;
+            break;
+            
         case "between":
             var startVal = test.values[0],
                 endVal = test.values[1];
