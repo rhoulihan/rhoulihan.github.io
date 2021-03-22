@@ -45,7 +45,9 @@ var // container for the Model schema
     cellId = {},
     // the Item clipboard
     pasteItem = {},
+    // number of filters for the currently loaded query
     numFilters = 0,
+    // collection of items matching the current query
     match_data = [];
 
 
@@ -250,6 +252,7 @@ function nameAttribute(id) {
     }
 }
 
+// import OneTable schema and entities
 function importOneTableSchema(schema) {
     schema = JSON.parse(schema);
     
@@ -301,6 +304,7 @@ function importOneTableSchema(schema) {
     addItem("~new~");
 }
 
+// set an attribute value
 function setValue(id) {
     // get the new value for the attribute and split out the key values and attribute name
     var newVal = $(jq(id)).text(),
@@ -391,6 +395,7 @@ function updateItem(id) {
     }
 }
 
+// remove all items from a partition
 function deletePartition(id) {
     if (cellId[id].PK == "~new~") {
         alert("New partitions cannot be deleted.");
@@ -408,6 +413,7 @@ function deletePartition(id) {
     $("#alertModal").show();
 }
 
+// remove an item from the model
 function deleteItem(id) {
     alertData = {
         caller: "deleteItem",
@@ -464,6 +470,7 @@ function show_table() {
     });
 }
 
+// show the query modal
 function showQuery(caller) {
     initQuery();
     
@@ -471,6 +478,7 @@ function showQuery(caller) {
     $("#queryDiv").show();
 }
 
+// reset the query modal
 function initQuery() {
     var name = model.DataModel[modelIndex].TableName;
     
@@ -509,6 +517,7 @@ function initQuery() {
     $("#selectQuery").append(`<option value="new" class="remove">Define new query...</option>`);
 }
 
+// show second value textbox if this is a between
 function setOp(type) {
     if (type == 'sort') {
         if ($("#selectOp").val() == 'between') {
@@ -531,11 +540,13 @@ function setOp(type) {
     }
 }
 
+// make the sort condition area visible
 function addSortCondition() {
     $("#btnAddSort").hide();
     $("#skDiv").show();
 }
 
+// add a filter to the query modal
 function addFilter() {
     if ($("#filterArea").is(":hidden")) {
         numFilters = 0;
@@ -567,6 +578,7 @@ function addFilter() {
     $("#selectFilter").scrollTop($("#selectFilter")[0].scrollHeight);
 }
 
+// create a query object
 function buildQuery() {
     var query = {},
         test = {};
@@ -616,6 +628,7 @@ function buildQuery() {
     runQuery($("#txtQueryName").val());
 }
 
+// load a query object into the query modal
 function setConditions() {
     var query = $("#selectQuery").val();
     
@@ -667,6 +680,7 @@ function setConditions() {
     });
 }
 
+// execute the query and display the result
 function runQuery(name) {
     var query = datamodel.SavedQuery[name],
         PK = "",
@@ -731,6 +745,7 @@ function runQuery(name) {
     loadDataModel();
 }
 
+// evaluate whether an item passes a test or not
 function evaluate(item, test) {
     var value = "",
         comparevalues = [];
@@ -1090,6 +1105,7 @@ function generate(isTable) {
     return html;
 }
     
+// create the HTML for the controls in a key cell
 function buildKeyCell(id) {
     var keypress = '"updatePK(\'' + id + '\')"',
         css = "PK-context-menu tab";
@@ -1104,6 +1120,7 @@ function buildKeyCell(id) {
     return retVal;
 }
 
+// construct the button HTML for a key cell
 function buildButtonHtml(id) {
     var add = '"addItemClick(\'' + id + '\')"',
         remove = '"deletePartition(\'' + id + '\')"',
@@ -1122,6 +1139,7 @@ function buildButtonHtml(id) {
     return text + '<div tabindex="-1" style="min-width: 35px;" class="bottomright noselect"><input tabindex="-1" onclick=' + add + ' type="image" src="./img/add.png" title="' + title1 + '" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="15" height="15"><input tabindex="-1" onclick=' + remove + ' type="image" src="./img/delete.png" title="' + title2 + '" style="cursor:pointer; background:transparent; float:left; border:0; outline:none;" border = 0 width="15" height="15"></div>'
 }
 
+// process map functions and generate the values for mapped attributes
 function runMapFunctions(data) {
     var mapFunc = {};
     
@@ -1162,6 +1180,7 @@ function runMapFunctions(data) {
     });
 }
 
+// choose a table to view from the model
 function selectTable() {
     $("#selectTableDiv").show();
 }
@@ -1190,6 +1209,7 @@ function findDataModels() {
     $("#viewTable").append('<option value="-1"> Add new Table... </option>');
 }
 
+// add a new table to the model
 function addTable() {
     $("#title h1").text("Create Table");
     $("#idx_lbl").text("Table name:");
@@ -1321,6 +1341,7 @@ function addObjectType(obj) {
     }    
 }
 
+// move a partition up or down in the display order
 function movePartition(moveUp) {
     var index = -1;
     
@@ -1470,6 +1491,7 @@ function postResponse() {
     }
 }
 
+// delete an attribute from an entity type
 function removeAttr(applyAll) {
     var PK = selectId.PK,
         SK = selectId.SK,
@@ -1497,6 +1519,7 @@ function removeAttr(applyAll) {
     loadDataModel();
 }
 
+// create a mapping for an entity attribute
 function createMapping() {
     makeChange();
     
@@ -1530,6 +1553,7 @@ function createMapping() {
     loadDataModel();
 }
 
+// get the backing Item for a table cell by cellId
 function findItemByCellId(id) {
     var item = null;
     $.each(json_data, function(idx, obj) {
@@ -1542,6 +1566,7 @@ function findItemByCellId(id) {
     return item;
 }
 
+// update the entity type in the Mapping Function modal when it is changed
 function setType() {
     if (datamodel.KeyAttributes.PartitionKey.hasOwnProperty("MapFunction"))
         if (datamodel.KeyAttributes.PartitionKey.MapFunction.hasOwnProperty($("#selectType").val()))
@@ -1554,6 +1579,7 @@ function setType() {
     $("#txtMapFunction").focus();
 }
 
+// initialize and show the Mapping Function modal
 function showMapDiv(id) {
     alertData.data = {};
     alertData.caller = cellId[id].attr;
@@ -1598,6 +1624,7 @@ function showMapDiv(id) {
     $("#txtMapFunction").focus();
 }
 
+// construct the context menus for the table cells
 function buildContextMenus() {
     $.contextMenu({
         selector: '.cell-context-menu', 
