@@ -374,61 +374,60 @@
 
     <!-- Create Table/Index Dialogue -->
     <div class="modal fade in" id="createTableOrIndex" role="dialog">
-            <!-- Modal content-->
-            <divstyle="width: 500px;"  class="modal-content">
-                    <div class="row">
-                        <div id="title">
-                            <h1 style="text-align: center"></h1>
-                        </div>
-                        <div id="partitionKey" class="key_row clearfix">
-                            <label class="key_label">Primary Key:</label><br>
+        <!-- Modal content-->
+        <div style="width: 500px;"  class="modal-content">
+            <div class="row">
+                <div id="title">
+                    <h1 style="text-align: center"></h1>
+                </div>
+                <div id="partitionKey" class="key_row clearfix">
+                    <label class="key_label">Primary Key:</label><br>
+                    
+                    <!-- label class="key_label">Partition Key:</label -->
+                    <input class="key_input gsi_primary" type="text" placeholder="Partition Key" style="float:left; width:62%;">
+                    
+                    <select id="dropPart" class="key_select" style="float:right; width: 35%;">
+                        <option value="S" selected="selected">String</option>
+                        <option value="N">Number</option>
+                    </select>
 
-                                <!-- label class="key_label">Partition Key:</label -->
-                                <input class="key_input gsi_primary" type="text" placeholder="Partition Key" style="float:left; width:62%;">
+                </div>
+                <div class="key_row clearfix">
 
-                                <select id="dropPart" class="key_select" style="float:right; width: 35%;">
-									<option value="S" selected="selected">String</option>
-									<option value="N">Number</option>
-								</select>
+                    <!-- label class="key_label">Sort Key:</label -->
+                    <input id="tbSort" class="key_input gsi_sort" type="text" placeholder="Sort Key" style="float:left;     width:62%;">
+                    <select id="dropSort" class="key_select" style="float:right; width: 35%;">
+                        <option value="S" selected="selected">String</option>
+                        <option value="N">Number</option>
+                    </select>
+                </div>
+                <hr>
+                <div class="key_row">
+                    <label id="idx_lbl" class="key_label">Index name:</label>
 
-                        </div>
-                        <div class="key_row clearfix">
+                    <input class="key_input cgi_title" type="text">
 
-                                <!-- label class="key_label">Sort Key:</label -->
-                                <input id="tbSort" class="key_input gsi_sort" type="text" placeholder="Sort Key" style="float:left; width:62%;">
-                                <select id="dropSort" class="key_select" style="float:right; width: 35%;">
-									<option value="S" selected="selected">String</option>
-									<option value="N">Number</option>
-								</select>
+                </div>
+                <div id="projection_cfg" class="key_row">
+                    <label class="key_label">Projected Attributes:</label>
 
-                        </div>
-                        <hr>
-                        <div class="key_row">
-                            <label id="idx_lbl" class="key_label">Index name:</label>
-
-                                <input class="key_input cgi_title" type="text">
-
-                        </div>
-                        <div id="projection_cfg" class="key_row">
-                            <label class="key_label">Projected Attributes:</label>
-
-                                <select class="key_select input_key_select">
-									<option selected="selected">All</option>
-									<option value="include">include</option>
-								</select>
-
-                        </div>
-                        <div class="key_row inputkey_group clearfix" style="display:none;">
-                                <input class="key_input attrkey_input" type="text" style="float:left; width:83%;margin-top:0;">
-                                <button class="btn_attrkey" style="float:right; width: 15%;">Add</button>
-                                <ul class="attrkey_list">
-                                </ul>
-                        </div>
-                    </div>
-                <div class="centered-buttons">
-                    <button type="button" class="cancel" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="ok btn_tablecreate">Create</button>
+                    <select class="key_select input_key_select">
+                        <option selected="selected">All</option>
+                        <option value="include">include</option>
+                    </select>
+                </div>
+                <div class="key_row inputkey_group clearfix" style="display:none;">
+                    <input class="key_input attrkey_input" type="text" style="float:left; width:83%;margin-top:0;">
+                    <button class="btn_attrkey" style="float:right; width: 15%;">Add</button>
+                    <ul class="attrkey_list">
+                    </ul>
                 </div>
             </div>
+            <div class="centered-buttons">
+                <button type="button" class="cancel" data-dismiss="modal">Cancel</button>
+                <button type="button" class="ok btn_tablecreate">Create</button>
+            </div>
+        </div>
     </div>
-</body></html>
+    </body>
+</html>
