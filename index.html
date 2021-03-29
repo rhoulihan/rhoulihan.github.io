@@ -66,6 +66,7 @@
         <a tabindex="-1" href="#" id="source">Load Model</a>
         <a tabindex="-1" href="#" id="saveModel">Save Model</a>
         <a tabindex="-1" href="#" id="importSchema">Import OneTable</a>
+        <a tabindex="-1" href="#" id="exportSchema">Export OneTable</a>
     </div>
     <div tabindex="-1" class="main">
         <div tabindex="-1" >
@@ -145,7 +146,7 @@
                 <image src="./img/MappingFunction.png"></image><br><br>
                 <p>Currently the only operation supported for Mapping Functions is concatenation of other Attributes into a composite key. To combine Attribute values simply reference the attribute name as shown in the screenshot. Any text outside of the '${}' syntax will appear as typed in the final value.</p>
                 <h3 tabindex="-1">OneTable Integration</h3>
-                <p>If you use <a href="https://github.com/sensedeep/dynamodb-onetable">OneTable</a> you can now import your schema files into the DynamoDB Datamodel using the convenient link on the Side Panel menu. Simply paste your JSON OneTable Schema into the dialog and you will be able to create Items using the Entity types defined in the OneTable schema. When creating items, set the "type" attribute to the entity type to populate all the other entity attributes. Currently only Table and Entity schema are imported, value mappings are not yet supported.</p>
+                <p>If you use <a href="https://github.com/sensedeep/dynamodb-onetable">OneTable</a> you can now import and export your schema files into and out of the DynamoDB Datamodel using the convenient links on the Side Panel menu. To import, simply paste your JSON OneTable Schema into the dialog and you will be able to create Items using the Entity types defined in the OneTable schema. When creating items, set the "type" attribute to the entity type to populate all the other entity attributes. Currently only Table and Entity schema are imported, value mappings are not yet supported. Exported schemas are saved to a file in a multi-line JSON format.</p>
                 <image src="./img/OneTable.png"></image><br><br>
                 <p>That should be enough to get you going. Click the '☰ menu' icon in the upper right corner to import an existing model from NoSQL Workbench for DynamoDB or use the modeler to build a data model for your DynamoDB Table from scratch.</p>
                 <p>Have ideas or feature requests? Ping me on <a href="https://twitter.com/houlihan_rick">Twitter</a> and let me know!</p>
