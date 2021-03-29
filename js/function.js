@@ -296,6 +296,11 @@ function importOneTableSchema(schema) {
     $.each(schema.models, function(key, entity){
         object_types[key] = {};
         $.each(entity, function(attr, val) {
+            if (val.hasOwnProperty("value")) {
+                val.S = val.value;
+                delete val.value;
+            }
+            
             object_types[key][attr] = val;
         });
     });
