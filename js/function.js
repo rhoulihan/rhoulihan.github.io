@@ -331,7 +331,6 @@ function exportOneTableSchema() {
     $.each(object_types, function(key, entity) {
         output.models[key] = entity;
     });
-    dump(output)
     save(JSON.stringify(output, null, 4), "schema.json", "json");
 }
 
