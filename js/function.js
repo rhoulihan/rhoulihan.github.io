@@ -305,8 +305,38 @@ function importOneTableSchema(schema) {
         });
     });
     
+    //  Save onetable schema
+    model.OneTable = schema
+    
     modelIndex = 0;
     addItem("~new~");
+}
+
+function exportOneTableSchema() {
+    let schema = model.OneTable;
+    let output = {
+        indexes: {
+            primary: {
+                hash: datamodel.KeyAttributes.PartitionKey.AttributeName,
+                sort: datamodel.KeyAttributes.SortKey.AttributeName,
+                description: schema.indexes.primary.description || '',
+            }
+        },
+        models: {},
+    };
+    let indexes = output.indexes;
+
+    $.each(datamodel.GlobalSecondaryIndexes, function(key, gsi) {
+        output.indexes[gsi.IndexName] = {
+            hash: gsi.KeyAttributes.PartitionKey.AttributeName,
+            sort: gsi.KeyAttributes.SortKey.AttributeName,
+            description: schema.indexes[gsi.IndexName].description || '',
+        };
+    });
+    $.each(object_types, function(key, entity) {
+        output.models[key] = entity;
+    });
+    save(JSON.stringify(output, null, 4), "schema.json", "json");
 }
 
 // set an attribute value
@@ -1513,11 +1543,15 @@ function removeAttr(applyAll) {
         }
     });
     
-    if (applyAll)
+    if (applyAll) {
         $.each(json_data, function(idx, obj) {
             if (getValue(obj["type"]) == type)
             delete obj[attr];
         });
+        if (object_types[type]) {
+            delete object_types[type][attr];
+        }
+    }
     
     selectId.attr = table.sort_key;
     $("#removeAttributeModal").hide();
@@ -2038,6 +2072,11 @@ $(document).ready(function() {
 
     $("#importSchema").on('click', function() {
         $("#oneTableModal").show();
+    });
+
+    $("#exportSchema").on('click', function() {
+        $("#mySidenav").css("width","0");
+        exportOneTableSchema();
     });
 
     $("#reload").on('click', function() {
