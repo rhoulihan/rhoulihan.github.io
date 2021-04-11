@@ -1182,9 +1182,9 @@ function generate(isTable) {
         backDiv = '<input tabindex="-1" onclick="undoChange(\'\')" type="image" src="./img/back.png" title="Undo Change" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="20" height="20">';
         
         if (showValues)
-            backDiv += '<i class="fas fa-wrench" title="Show Schema" style="float: right;" onclick="toggleSchema()"></i>';
+            backDiv += '<i class="fas fa-wrench" title="Show Schema" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" onclick="toggleSchema()"></i>';
         else
-            backDiv += '<i class="fas fa-sliders-h" title="Show Values" style="float: right;" onclick="toggleSchema()"></i>';
+            backDiv += '<i class="fas fa-sliders-h" title="Show Values" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" onclick="toggleSchema()"></i>';
     }
 
     // build the table HTML
