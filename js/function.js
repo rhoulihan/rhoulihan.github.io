@@ -1178,8 +1178,14 @@ function generate(isTable) {
 
     // add the undo button if this is the table view
     var backDiv = "";
-    if (isTable)
+    if (isTable) {
         backDiv = '<input tabindex="-1" onclick="undoChange(\'\')" type="image" src="./img/back.png" title="Undo Change" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="20" height="20">';
+        
+        if (showValues)
+            backDiv += '<i class="fas fa-wrench" title="Show Schema" style="float: right;" onclick="toggleSchema()"></i>';
+        else
+            backDiv += '<i class="fas fa-sliders-h" title="Show Values" style="float: right;" onclick="toggleSchema()"></i>';
+    }
 
     // build the table HTML
     var html = '<th id="attrHead" rowspan="2" colspan="' + maxLength + '">Attributes' + backDiv + '</th></tr>';
@@ -1887,6 +1893,12 @@ function buildContextMenus() {
     });
 }
 
+function toggleSchema() {
+    showValues = !showValues
+    show_table();
+    e.preventDefault()
+}
+
 // UI logic and onclick handlers
 $(document).ready(function() {
     //file upload
@@ -2125,6 +2137,7 @@ $(document).ready(function() {
         $("#showValuesCheckbox").prop("checked", showValues);
         e.preventDefault()
     });
+    
     $("#showValuesCheckbox").prop("checked", true);
 
     $("#exportSchema").on('click', function() {
