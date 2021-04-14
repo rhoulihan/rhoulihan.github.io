@@ -1,4 +1,10 @@
-var // container for the Model schema
+/*
+    CHANGES:
+
+    TODO
+    * Rename table -> ???
+ */
+var // container for the data model
     model = {},
     // pointer to model.DataModel[modelIndex]
     datamodel = {},
@@ -6,7 +12,8 @@ var // container for the Model schema
     json_data = [],
     // container for change history (up to 50 revisions per table in the model)
     tableChanges = {},
-    // container for the current table schema definition
+    // container for the current table
+    // properties: name, partition_key, sort_key, sortkey_datatype
     table = {},
     // holders for the current keys and data types used by makeTable()/makeIndex()/generate()
     partition_key,
@@ -14,8 +21,6 @@ var // container for the Model schema
     sortkey_datatype,
     // list of unique values by attribute name
     unique_values = {},
-    // object type attribute templates
-    object_types = {},
     // gsi projection settings for new GSI
     gsi_attrkey = 'all',
     gsi_attrlist = [],
@@ -52,6 +57,46 @@ var // container for the Model schema
     // Show values vs types/templates
     showValues = true;
 
+const DefaultSchema = {
+    indexes: {},
+    models: {},
+    queries: {},
+    data: [],
+}
+
+/*
+    Schema defining indexes, entity models.
+*/
+var schema = {
+    indexes: { /*
+        primary: { hash: 'partition-key-name', sort: 'sort-key-name' }
+        gs1: { hash: 'partition-key-name', sort: 'sort-key-name' }
+    */ },
+    models: { /*
+        map             String. Either simple attribute name or "attribute.property".
+        default         String. Default value string or function.
+        foreign         String. Reference to another entity model (model:keys)
+        nulls           Boolean. Allow property to be set to null.
+        required        Boolean. Attribute is always required.
+        size            Number. Maximum size of the data value
+        type            String: String, Boolean, Number, Date, Set, Buffer, Binary, Set, Object, Array
+        validate        String. Regular expression to match data (/regexp/qualifiers)
+        value           String|Function. Value string template, function (mapping function)
+        unique          Boolean. Attribute must have a unique value
+
+        //  Not proposed to implement
+        crypt           Boolean
+        enum            Array of values
+        filter          Boolean. Prevent a property from being used in a filter
+        hidden          Boolean Don't return the attributes to API callers.
+        transform       Transform hook function
+        uuid            ‘uuid | ulid | ksuid'
+    */ },
+
+    //  Present on import / export
+    queries: {},
+    data: {},
+}
 
 // Utility method to escape characters in an element id that will mess with jquery
 function jq( myid ) {
@@ -147,31 +192,42 @@ function addItem(id) {
     // snapshot model state
     makeChange();
 
-    // add "type" as a non-key attribute and push the item onto the array
-    addNonKeyAttribute({"AttributeName": "type", "AttributeType": "S"});
+    // add "type" as a non-key attribute
+    addNonKeyAttribute(null, 'type');
     json_data.push(newItem);
 
     // refresh the table view
     loadDataModel();
 }
 
-// add a non-key attribute to the model schema if it does not already exist
-function addNonKeyAttribute(attr) {
-    // create the container if not already initialized
-
+// add a non-key attribute to the model if it does not already exist
+function addNonKeyAttribute(type, attribute) {
+    // add this attribute to the schema
+    if (type && !schema.models[type][attribute]) {
+        schema.models[type][attribute] = { type: 'String' }
+    }
     // search the attribute list for this name
     var found = false;
     $.each(model.DataModel[modelIndex].NonKeyAttributes, function (idx, obj) {
-        if (attr.AttributeName == obj.AttributeName)
+        if (attribute.AttributeName == obj.AttributeName)
             found = true;
     });
 
     // if the attribute is not on the list then add it
     if (!found)
-        model.DataModel[modelIndex].NonKeyAttributes.push(attr);
+        model.DataModel[modelIndex].NonKeyAttributes.push({AttributeName: attribute, AttributeType: 'S'});
 }
 
-// add an attribute to an Item
+function findModel(id) {
+    let type = findType(id)
+    return schema.models.find(m => m.type == type)
+}
+
+function findType(id) {
+    return cellId[id].type
+}
+
+// add an attribute to an Item. Note: this does not change the schema until an attibute name is assigned.
 function addAttribute(id) {
     // find the backing object for this Item
     $.each(json_data, function(idx, obj) {
@@ -206,37 +262,34 @@ function nameAttribute(id) {
 
         // split the element id for Item keys and get new attribute value
         var
-            val = $(jq(id)).text(),
+            attribute = $(jq(id)).text(),
             type = {};
 
         // find the backing object for the Item
         $.each(json_data, function(idx, obj) {
             if ( getValue(obj[table.partition_key]) == cellId[id].PK && getValue(obj[table.sort_key]) == cellId[id].SK && Object.keys(obj).includes("~new~")) {
                 // if the property already exists then bail out
-                if (obj.hasOwnProperty(val)) {
+                if (obj.hasOwnProperty(attribute)) {
                     return false;
                 }
-
                 // add the non-key attribute defintion
-                addNonKeyAttribute({"AttributeName": $(jq(id)).text(), "AttributeType": "S"});
+                addNonKeyAttribute(obj.type.S, attribute)
+
                 // swap the value into the new attribute and delete the placeholder
-                obj[val] = obj["~new~"];
+                obj[attribute] = obj["~new~"];
                 delete obj["~new~"];
                 selectId = {
                     PK: getValue(obj[table.partition_key]),
                     SK: getValue(obj[table.sort_key]),
-                    attr: val
+                    attr: attribute
                 };
 
                 // add this attribute to other objects of this type
                 if (obj.hasOwnProperty("type")) {
                     $.each(json_data, function (idx, obj1) {
                         if (obj.type.S == obj1.type.S)
-                            obj1[$(jq(id)).text()] = { "S" : "~new~"};
+                            obj1[attribute] = { "S" : "~new~"};
                     });
-
-                    //add this attribute to the type template for this object
-                    object_types[obj.type.S][$(jq(id)).text()] = { "S" : "~new~"};
                 }
             }
         });
@@ -245,7 +298,7 @@ function nameAttribute(id) {
         if (Object.keys(type).length > 0) {
             $.each(json_data, function (idx, obj) {
                 if (obj["type"]["S"] == type.S)
-                    obj[$(jq(id)).text()] = { "S" : "~new~"};
+                    obj[attribute] = { "S" : "~new~"};
             });
         }
 
@@ -254,21 +307,23 @@ function nameAttribute(id) {
     }
 }
 
-// import OneTable schema and entities
-function importOneTableSchema(schema) {
-    schema = JSON.parse(schema);
-
+function importOneTableSchema(text) {
+    schema = JSON.parse(text);
+    if (!schema.models) {
+        alert('Invalid OneTable schema. Missing top level models.')
+        return
+    }
     model = {};
-    $.each(schema.indexes, function(key, obj) {
-        var def = {};
 
+    for (let [indexName, index] of Object.entries(schema.indexes)) {
+        var def = {};
         def.KeyAttributes = {};
         def.KeyAttributes.PartitionKey = {
-            'AttributeName': obj.hash,
+            'AttributeName': index.hash,
             'AttributeType': 'S'
         };
         def.KeyAttributes.SortKey = {
-            'AttributeName': obj.sort,
+            'AttributeName': index.sort,
             'AttributeType': 'S'
         };
         def.NonKeyAttributes = [];
@@ -278,88 +333,50 @@ function importOneTableSchema(schema) {
             modelIndex = 0;
             model.DataModel = [];
             def.GlobalSecondaryIndexes = [];
-            def.TableName = key;
-            tableChanges[key] = [];
+            def.TableName = indexName;
+            tableChanges[indexName] = [];
             model.DataModel.push(def);
             table = {
-                name: key,
+                name: indexName,
                 partition_key: def.KeyAttributes.PartitionKey.AttributeName,
                 sort_key: def.KeyAttributes.SortKey.AttributeName,
                 sortkey_datatype: def.KeyAttributes.SortKey.AttributeType
             };
             json_data = def.TableData;
         } else {
-            def.IndexName = key;
+            def.IndexName = indexName;
             def.Projection = { ProjectionType: "ALL" };
             model.DataModel[modelIndex].GlobalSecondaryIndexes.push(def);
         }
-    });
-
-    //  Needed for createMapping()
+    }
     modelIndex = 0;
     datamodel = model.DataModel[modelIndex];
-    object_types = {}
 
-    $.each(schema.models, function(key, entity) {
-        object_types[key] = {};
-        $.each(entity, function(attr, val) {
-            if (val.hasOwnProperty("value")) {
-                val.S = val.value;
-            }
-            object_types[key][attr] = val;
-            //  Define mapping functions from OneTable prop.value templates
-            if (val.value) {
-                alertData.caller = attr;
-                alertData.data = { type: key, function: val.value }
-                if (!schema.indexes[attr]) {
-                    let item = datamodel.NonKeyAttributes.find(a => a.AttributeName == attr)
+    for (let [modelName, model] of Object.entries(schema.models)) {
+        for (let [name, field] of Object.entries(model)) {
+            if (field.value) {
+                if (!schema.indexes[name]) {
+                    let item = datamodel.NonKeyAttributes.find(a => a.AttributeName == name);
                     if (!item) {
                         item = {
-                            AttributeName: attr,
-                            AttributeType: 'S',
+                            AttributeName: name,
+                            AttributeType: typeToDynamo(field.type),
                         }
-                        datamodel.NonKeyAttributes.push(item)
+                        datamodel.NonKeyAttributes.push(item);
                     }
                 }
-                createMapping()
             }
-        });
+        }
         //  Define type attribute (OneTable does this automatically)
-        object_types[key].type = { type: 'String', required: true, value: key };
-    });
-
-    //  Save onetable schema
-    model.OneTable = schema
-
-    modelIndex = 0;
+        if (!schema.models[modelName]) {
+            schema.models[modelName].type = { type: 'String', required: true, value: modelName };
+        }
+    }
     addItem("~new~");
 }
 
 function exportOneTableSchema() {
-    let schema = model.OneTable;
-    let output = {
-        indexes: {
-            primary: {
-                hash: datamodel.KeyAttributes.PartitionKey.AttributeName,
-                sort: datamodel.KeyAttributes.SortKey.AttributeName,
-                description: schema.indexes.primary.description || '',
-            }
-        },
-        models: {},
-    };
-    let indexes = output.indexes;
-
-    $.each(datamodel.GlobalSecondaryIndexes, function(key, gsi) {
-        output.indexes[gsi.IndexName] = {
-            hash: gsi.KeyAttributes.PartitionKey.AttributeName,
-            sort: gsi.KeyAttributes.SortKey.AttributeName,
-            description: schema.indexes[gsi.IndexName].description || '',
-        };
-    });
-    $.each(object_types, function(key, entity) {
-        output.models[key] = entity;
-    });
-    save(JSON.stringify(output, null, 4), "schema.json", "json");
+    save(JSON.stringify(schema, null, 4), "schema.json", "json");
 }
 
 // set an attribute value
@@ -388,7 +405,8 @@ function setValue(id) {
 
     if (!found) {
         if (!showValues) {
-            let entity = Object.values(object_types).find(e => e[table.partition_key].value == PK)
+            //  Editing meta view, so update the type or value template where appropriate
+            let entity = Object.values(schema.models).find(e => e[table.partition_key].value == PK)
             let field = entity[name]
             if (field.value) {
                 field.value = newVal
@@ -410,7 +428,6 @@ function setValue(id) {
                                 };
                         }
                         else {
-                            var next
                             selectId = cellId["cell" + (parseInt(id.substr(4)) + 1)];
                         }
 
@@ -427,15 +444,14 @@ function setValue(id) {
                             });
 
                             // add attributes for new type with default value
-                            if (object_types.hasOwnProperty(newVal)) {
-                                $.each(object_types[newVal], function(prop, def) {
+                            if (schema.models.hasOwnProperty(newVal)) {
+                                $.each(schema.models[newVal], function(prop, field) {
                                     if (prop != 'type') {
-                                        obj[prop] = {'S': def.default || '~new~'}
+                                        obj[prop] = {'S': field.default || '~new~'}
                                     }
                                 });
                             } else {
-                                // add the type template if it does not exist
-                                addObjectType(obj);
+                                addEntityToSchema(obj);
                             }
                         }
 
@@ -550,6 +566,7 @@ function showQuery(caller) {
 
 // reset the query modal
 function initQuery() {
+    if (!model.DataModel) return;
     var name = model.DataModel[modelIndex].TableName;
 
     $(".remove").remove();
@@ -1033,7 +1050,9 @@ function generate(isTable) {
             }
 
             tbody_html = '<tr>';
-            let entity = object_types[obj.type.S];
+
+            let type = (obj && obj.type) ? obj.type.S : null;
+            let entity = type ? schema.models[type] : null;
 
             // If its the first cell insert the partition key value and span all the rows for the objects in this partition otherwise skip
             if (count == 0) {
@@ -1063,7 +1082,8 @@ function generate(isTable) {
 
                         cellId[id] = {
                             PK: PK,
-                            attr: partition_key
+                            attr: partition_key,
+                            type: type,
                         }
 
                         // wrap the partition key value in a contenteditable div using the PK value as element id and hook the relevant handlers
@@ -1091,7 +1111,8 @@ function generate(isTable) {
                     cellId[id] = {
                         PK: PK,
                         SK: SK,
-                        attr: sort_key
+                        attr: sort_key,
+                        type: type,
                     }
 
                     // wrap the partition key value in a contenteditable div using the PK value as element id and hook the relevant handlers
@@ -1119,7 +1140,8 @@ function generate(isTable) {
                     cellId[id] = {
                         PK: getValue(obj[partition_key]),
                         SK: getValue(obj[sort_key]),
-                        attr: "new"
+                        attr: "new",
+                        type: type,
                     }
 
                     // store attribute name cell id in the focus pointer
@@ -1148,7 +1170,8 @@ function generate(isTable) {
                         cellId[id] = {
                             PK: PK,
                             SK: SK,
-                            attr: name
+                            attr: name,
+                            type: type,
                         }
 
                         boundary.last = cellId[id];
@@ -1180,11 +1203,11 @@ function generate(isTable) {
     var backDiv = "";
     if (isTable) {
         backDiv = '<input tabindex="-1" onclick="undoChange(\'\')" type="image" src="./img/back.png" title="Undo Change" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="20" height="20">';
-        
+
         if (showValues)
-            backDiv += '<i class="fas fa-wrench" title="Show Schema" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" onclick="toggleSchema()"></i>';
+            backDiv += '<i class="fas fa-wrench" title="Show Schema" style="cursor:pointer; background:transparent; float:right; border:0; padding: 2px; outline:none;" onclick="toggleSchema()"></i>';
         else
-            backDiv += '<i class="fas fa-sliders-h" title="Show Values" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" onclick="toggleSchema()"></i>';
+            backDiv += '<i class="fas fa-sliders-h" title="Show Values" style="cursor:pointer; background:transparent; float:right; border:0; padding: 2px; outline:none;" onclick="toggleSchema()"></i>';
     }
 
     // build the table HTML
@@ -1231,38 +1254,28 @@ function buildButtonHtml(id) {
     return text + '<div tabindex="-1" style="min-width: 35px;" class="bottomright noselect"><input tabindex="-1" onclick=' + add + ' type="image" src="./img/add.png" title="' + title1 + '" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="15" height="15"><input tabindex="-1" onclick=' + remove + ' type="image" src="./img/delete.png" title="' + title2 + '" style="cursor:pointer; background:transparent; float:left; border:0; outline:none;" border = 0 width="15" height="15"></div>'
 }
 
-// process map functions and generate the values for mapped attributes
-function runMapFunctions(data) {
-    var mapFunc = {};
+// process value templates and generate values
+function expandValueTemplates() {
+    for (let item of datamodel.TableData) {
+        for (let [name, value] of Object.entries(item)) {
+            if (!item.type) continue
+            let type = Object.values(item.type)[0]
+            if (type == '~new~') continue
 
-    if (datamodel.KeyAttributes.PartitionKey.hasOwnProperty("MapFunction")) {
-        mapFunc[table.partition_key] = {};
-        mapFunc[table.partition_key] = datamodel.KeyAttributes.PartitionKey.MapFunction;
-    }
+            let entity = schema.models[type]
+            if (!entity) continue
 
-    if (datamodel.KeyAttributes.SortKey.hasOwnProperty("MapFunction")) {
-        mapFunc[table.sort_key] = {};
-        mapFunc[table.sort_key] = datamodel.KeyAttributes.SortKey.MapFunction;
-    }
+            let field = entity[name]
+            if (!field || !field.value) continue
 
-    $.each(datamodel.NonKeyAttributes, function(idx, attr) {
-        if (attr.hasOwnProperty("MapFunction")) {
-            mapFunc[attr.AttributeName] = attr.MapFunction;
+            let text = field.value.replace(/\${(.*?)}/g, (pattern, varName) => {
+                return Object.values(item[varName])[0] || pattern
+            })
+            if (text != value) {
+                item[name] = { 'S' : text }
+            }
         }
-    });
-
-    $.each(mapFunc, function(attr, func) {
-        $.each(func, function(key, val) {
-            $.each(data, function (idx, obj) {
-                if (getValue(obj.type) == key) {
-                    let text = val.replace(/\${(.*?)}/g, (match, varName) => {
-                        return getValue(obj[varName]) || match
-                    })
-                    obj[attr] = { "S": text };
-                }
-            });
-        });
-    });
+    }
 }
 
 // choose a table to view from the model
@@ -1274,9 +1287,10 @@ function selectTable() {
 function onReaderLoad(event) {
     model = JSON.parse(event.target.result);
     // Clear out prior schema
-    object_types = {}
+    schema = Object.assign({}, DefaultSchema)
     findDataModels();
     loadDataModel();
+    createSchema();
 }
 
 // load the table data models into the view table dropdown
@@ -1306,6 +1320,67 @@ function addTable() {
     $('#createTableOrIndex').modal('toggle');
 }
 
+/*
+    Create a schema from the data in a workbench model
+ */
+function createSchema() {
+    schema = Object.assign({}, DefaultSchema)
+    let {data, indexes, models, queries} = schema
+    let keys = datamodel.KeyAttributes
+
+    /*
+        Extract indexes
+     */
+    indexes.primary = {
+        hash: keys.PartitionKey.AttributeName,
+        sort: keys.SortKey.AttributeName,
+    }
+    for (let gsi of datamodel.GlobalSecondaryIndexes) {
+        indexes[gsi.IndexName] = {
+            hash: gsi.KeyAttributes.PartitionKey.AttributeName,
+            sort: gsi.KeyAttributes.SortKey.AttributeName,
+            projection: gsi.Projection.ProjectionType,
+        }
+    }
+
+    /*
+        Extract the schema entity models
+     */
+    for (let row of datamodel.TableData) {
+        let entity
+        if (row.type) {
+            let type = Object.values(row.type)[0]
+            entity = schema.models[type] = schema.models[type] || {}
+        }
+        /*
+            Extract the attributes, map the types and save the data to the schema.data (future)
+         */
+        let drow = {}
+        for (let [fieldName, col] of Object.entries(row)) {
+            if (entity) {
+                let field = entity[fieldName] = entity[fieldName] || {}
+                field.type = dynamoToType(Object.keys(col)[0])
+            }
+            drow[fieldName] = Object.values(col)[0]
+        }
+        data.push(drow)
+    }
+    /*
+        Apply the value templates
+     */
+    for (let [type, fn] of Object.entries(keys.PartitionKey.MapFunction || {})) {
+        schema.models[type][keys.ParitionKey.AttributeName].value = fn
+    }
+    for (let [type, fn] of Object.entries(keys.SortKey.MapFunction || {})) {
+        schema.models[type][keys.SortKey.AttributeName].value = fn
+    }
+    for (let att of datamodel.NonKeyAttributes) {
+        for (let [type, fn] of Object.entries(att.MapFunction || {})) {
+            schema.models[type][att.AttributeName].value = fn
+        }
+    }
+}
+
 // load the current data model for the viewer
 function loadDataModel() {
     datamodel = model.DataModel[modelIndex];
@@ -1319,7 +1394,7 @@ function loadDataModel() {
     if (!tableChanges.hasOwnProperty(datamodel.TableName))
         tableChanges[datamodel.TableName] = [];
 
-    runMapFunctions(datamodel.TableData);
+    expandValueTemplates();
     json_data = datamodel.TableData;
 
     if (match_data.length > 0)
@@ -1375,6 +1450,7 @@ function save(data, filename, type) {
 
 // store a copy of the current datamodel in the history buffer
 function makeChange() {
+    //MOB - must save schema here somehow
     tableChanges[model.DataModel[modelIndex]["TableName"]].push(JSON.parse(JSON.stringify(datamodel)));
 
     // if the buffer is too long then trim the oldest change
@@ -1407,23 +1483,20 @@ function findValues() {
                 unique_values[name].push(value);
             }
         });
-
-        addObjectType(obj);
+        addEntityToSchema(obj);
     });
 }
 
 // scan object templates and add new types
-function addObjectType(obj) {
-    var name = getValue(obj["type"]);
-    // if this object has a type and there is no template
-    if (Object.keys(obj).includes("type") && !Object.keys(object_types).includes(name) && name != "~new~") {
+function addEntityToSchema(obj) {
+    var type = getValue(obj.type);
+    if (type != '~new~' && !schema.models[type]) {
         // add the type template object
-        object_types[name] = {};
+        schema.models[type] = {type: { type: 'String', required: true, value: type }};
 
         // add all the attributes from this object to the template
         $.each(Object.keys(obj), function (idx, key) {
-            //  Need all attributes added to schema including keys
-            object_types[name][key] = { "S": "~new~" };
+            schema.models[type][key] = { type: 'String' };
         });
     }
 }
@@ -1587,7 +1660,6 @@ function removeAttr(applyAll) {
 
     makeChange();
     $.each(json_data, function(idx, obj) {
-
         if (getValue(obj[table.partition_key]) == PK && getValue(obj[table.sort_key]) == SK) {
             delete obj[attr];
             type = getValue(obj.type);
@@ -1600,8 +1672,8 @@ function removeAttr(applyAll) {
             if (getValue(obj["type"]) == type)
             delete obj[attr];
         });
-        if (object_types[type]) {
-            delete object_types[type][attr];
+        if (schema.models[type]) {
+            delete schema.models[type][attr];
         }
     }
 
@@ -1611,9 +1683,11 @@ function removeAttr(applyAll) {
 }
 
 // create a mapping for an entity attribute
-function createMapping() {
-    makeChange();
+function createMapping(type, name, value) {
+    schema.models[type][name].value = value
 
+    /*
+    makeChange();
     switch (alertData.caller) {
         case table.partition_key:
             if (!datamodel.KeyAttributes.PartitionKey.hasOwnProperty("MapFunction"))
@@ -1639,8 +1713,10 @@ function createMapping() {
             });
             break;
     }
-
-    loadDataModel();
+    if (loadModel) {
+        loadDataModel();
+    }
+    */
 }
 
 // get the backing Item for a table cell by cellId
@@ -1669,8 +1745,8 @@ function setType() {
     $("#txtMapFunction").focus();
 }
 
-// initialize and show the Mapping Function modal
-function showMapDiv(id) {
+// initialize and show the Value Template modal
+function showValueTemplate(id) {
     alertData.data = {};
     alertData.caller = cellId[id].attr;
 
@@ -1684,7 +1760,7 @@ function showMapDiv(id) {
         $("#txtMapFunction").prop("disabled", true);
         $("#btnDefineMap").prop("disabled", true);
 
-        $.each(object_types, function(prop, val) {
+        $.each(schema.models, function(prop, val) {
             $("#selectType").append($('<option></option>').val(prop).html(prop));
         });
         $("#selectTypeDiv").show();
@@ -1710,7 +1786,7 @@ function showMapDiv(id) {
             break;
     }
 
-    $("#defineMapDiv").show();
+    $("#defineValueTemplateDiv").show();
     $("#txtMapFunction").focus();
 }
 
@@ -1736,7 +1812,7 @@ function buildContextMenus() {
                     break;
 
                 case "function":
-                    showMapDiv($(this).attr("id"));
+                    showValueTemplate($(this).attr("id"));
                     break;
             }
         },
@@ -1749,7 +1825,7 @@ function buildContextMenus() {
                 }
             },
             "function": {
-                name: "Edit Mapping",
+                name: "Edit Value Template",
                 icon: "fa-wrench",
                 disabled: function(key, opt) {
                     return cellId[$(this).attr("id")].attr == "type";
@@ -1777,7 +1853,7 @@ function buildContextMenus() {
         },
         "delete": {name: "Delete Partition", icon: "fa-minus"},
         "function": {
-            name: "Edit Mapping",
+            name: "Edit Value Template",
             icon: "fa-wrench"
         },
         "moveUp": {
@@ -1822,7 +1898,7 @@ function buildContextMenus() {
                     break;
 
                 case "function":
-                    showMapDiv($(this).attr("id"));
+                    showValueTemplate($(this).attr("id"));
                     break;
             }
         },
@@ -1835,7 +1911,7 @@ function buildContextMenus() {
         "copy": {name: "Copy Item", icon: "fa-copy"},
         "delete": {name: "Delete Item", icon: "fa-minus"},
         "function": {
-            name: "Edit Mapping",
+            name: "Edit Value Template",
             icon: "fa-wrench"
         },
         "insert": {
@@ -1885,7 +1961,7 @@ function buildContextMenus() {
                     break;
 
                 case "function":
-                    showMapDiv($(this).attr("id"));
+                    showValueTemplate($(this).attr("id"));
                     break;
             }
         },
@@ -1896,7 +1972,45 @@ function buildContextMenus() {
 function toggleSchema() {
     showValues = !showValues
     show_table();
-    e.preventDefault()
+}
+
+function getModel(type) {
+    return schema.models.find(m => m.type == type)
+}
+
+function dynamoToType(dtype) {
+    switch (dtype) {
+    case 'B':
+        return 'Binary'
+    case 'BOOL':
+        return 'boolean'
+    case 'S':
+        return 'String'
+    case 'N':
+        return 'Number'
+    case 'SS':
+        return 'Set'
+    default:
+        return 'String'
+    }
+}
+
+function typeToDynamo(type) {
+    switch (type) {
+    case 'Binary':
+        return 'B'
+    case 'Boolean':
+        return 'BOOL'
+    case 'Date':
+        return 'S'
+    case 'Number':
+        return 'N'
+    case 'Set':
+        //  need support for SS, NS, BS
+        return 'SS'
+    default:
+        return 'S'
+    }
 }
 
 // UI logic and onclick handlers
@@ -1919,13 +2033,16 @@ $(document).ready(function() {
             alert("Map Functions cannot reference the destination attribute.");
             return;
         }
-        alertData.data.function = $("#txtMapFunction").val();
-        createMapping();
+        let valueTemplate = $("#txtMapFunction").val();
+        debugger;
+        makeChange();
+        createMapping(alertData.data.type, alertData.caller, valueTemplate);
+        loadDataModel();
 
         $("#txtMapFunction").val("");
         $("#lblEditMap").text("Mapping Function:");
         $("#selectTypeDiv").hide();
-        $("#defineMapDiv").hide();
+        $("#defineValueTemplateDiv").hide();
     });
 
     // generic click handler for Cancel buttons
@@ -1937,7 +2054,7 @@ $(document).ready(function() {
         $("#alertModal").hide();
         $("#removeAttributeModal").hide();
         $("#oneTableModal").hide();
-        $("#defineMapDiv").hide();
+        $("#defineValueTemplateDiv").hide();
         $("#txtMapFunction").val("");
         $("#lblEditMap").text("Mapping Function:");
         $("#selectTypeDiv").hide();
@@ -2020,7 +2137,8 @@ $(document).ready(function() {
         }
 
         definition.KeyAttributes = {};
-        definition[isTable ? "TableName" : "IndexName"] = $('.cgi_title').val();
+        let indexName = $('.cgi_title').val();
+        definition[isTable ? "TableName" : "IndexName"] = indexName
         definition.KeyAttributes.PartitionKey = {
             "AttributeName": $('.gsi_primary').val(),
             "AttributeType": $('#dropPart').val()
@@ -2037,6 +2155,11 @@ $(document).ready(function() {
 
             makeChange();
             datamodel.GlobalSecondaryIndexes.push(definition);
+            schema.indexes[indexName] = {
+                hash: $('.gsi_primary').val(),
+                sort: $('.gsi_sort').val(),
+                projection: 'ALL',
+            }
         } else {
             datamodel = {
                 "TableName": definition.TableName,
@@ -2059,6 +2182,11 @@ $(document).ready(function() {
             table.sort_key = $('.gsi_sort').val();
             table.sortkey_datatype = $('.dropSort').val();
             tableChanges[datamodel.TableName] = [];
+
+            schema.indexes.primary = {
+                hash: $('.gsi_primary').val(),
+                sort: $('.gsi_sort').val(),
+            }
             addItem("~new~");
         }
         $("#createTableOrIndex").find('.key_input').val('');
@@ -2137,7 +2265,7 @@ $(document).ready(function() {
         $("#showValuesCheckbox").prop("checked", showValues);
         e.preventDefault()
     });
-    
+
     $("#showValuesCheckbox").prop("checked", true);
 
     $("#exportSchema").on('click', function() {
