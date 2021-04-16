@@ -386,7 +386,8 @@ function setValue(id) {
         PK = cellId[id].PK,
         SK = cellId[id].SK,
         name = cellId[id].attr,
-        change = true;
+        change = true,
+        obj = cellId[id].obj;
 
     // if the value is uninitialized
     if (newVal == "~new~")
@@ -414,54 +415,48 @@ function setValue(id) {
                 field.type = newVal
             }
         } else {
-            // find the backing object for the Item
-            $.each(json_data, function(idx, obj) {
-                if ( getValue(obj[table.partition_key]) == PK && getValue(obj[table.sort_key]) == SK ) {
-                    // if the value has changed then process it
-                    if (getValue(obj[name]) != newVal) {
-                        if ( name == sort_key) {
-                            if ( !mouseDown  )
-                                selectId = {
-                                    PK: PK,
-                                    SK: newVal,
-                                    attr: "type"
-                                };
-                        }
-                        else {
-                            selectId = cellId["cell" + (parseInt(id.substr(4)) + 1)];
-                        }
-
-                        // snapshot model state and apply the change
-                        makeChange();
-                        assignValue(obj[name], newVal);
-
-                        // if this is a type change then adjust the attributes accordingly
-                        if (name == "type") {
-                            //remove existing attributes
-                            $.each(Object.keys(obj), function (idx, key) {
-                                if (key != table.partition_key && key != table.sort_key && key != "type")
-                                    delete obj[key];
-                            });
-
-                            // add attributes for new type with default value
-                            if (schema.models.hasOwnProperty(newVal)) {
-                                $.each(schema.models[newVal], function(prop, field) {
-                                    if (prop != 'type') {
-                                        obj[prop] = {'S': field.default || '~new~'}
-                                    }
-                                });
-                            } else {
-                                addEntityToSchema(obj);
-                            }
-                        }
-
-                        // refresh the table view
-                        loadDataModel();
-                    }
-
-                    return false;
+            // if the value has changed then process it
+            if (getValue(obj[name]) != newVal) {
+                if ( name == sort_key) {
+                    if ( !mouseDown  )
+                        selectId = {
+                            PK: PK,
+                            SK: newVal,
+                            attr: "type"
+                        };
                 }
-            });
+                else {
+                    selectId = cellId["cell" + (parseInt(id.substr(4)) + 1)];
+                }
+
+                // snapshot model state and apply the change
+                makeChange();
+                assignValue(obj[name], newVal);
+                
+                // if this is a type change then adjust the attributes accordingly
+                if (name == "type") {
+                    //remove existing attributes
+                    $.each(Object.keys(obj), function (idx, key) {
+                        if (key != table.partition_key && key != table.sort_key && key != "type")
+                            delete obj[key];
+                    });
+
+                    // add attributes for new type with default value
+                    if (schema.models.hasOwnProperty(newVal)) {
+                        $.each(schema.models[newVal], function(prop, field) {
+                            let props = ['type', table.partition_key, table.sort_key];
+                            if (!props.includes(prop)) {
+                                obj[prop] = {'S': field.default || '~new~'}
+                            }
+                        });
+                    } else {
+                        addEntityToSchema(obj);
+                    }
+                }
+
+                // refresh the table view
+                loadDataModel();
+            }
         }
     }
 }
@@ -1084,6 +1079,7 @@ function generate(isTable) {
                             PK: PK,
                             attr: partition_key,
                             type: type,
+                            obj: obj
                         }
 
                         // wrap the partition key value in a contenteditable div using the PK value as element id and hook the relevant handlers
@@ -1113,6 +1109,7 @@ function generate(isTable) {
                         SK: SK,
                         attr: sort_key,
                         type: type,
+                        obj: obj
                     }
 
                     // wrap the partition key value in a contenteditable div using the PK value as element id and hook the relevant handlers
@@ -1142,6 +1139,7 @@ function generate(isTable) {
                         SK: getValue(obj[sort_key]),
                         attr: "new",
                         type: type,
+                        obj: obj
                     }
 
                     // store attribute name cell id in the focus pointer
@@ -1172,6 +1170,7 @@ function generate(isTable) {
                             SK: SK,
                             attr: name,
                             type: type,
+                            obj: obj
                         }
 
                         boundary.last = cellId[id];
