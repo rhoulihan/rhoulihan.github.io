@@ -333,6 +333,7 @@
       }
     }
   ],
+  "ModelSchema": {
     "indexes": {
       "primary": {
         "hash": "PK",
