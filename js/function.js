@@ -1292,7 +1292,7 @@ function onReaderLoad(event) {
     findDataModels();
     loadDataModel();
     
-    if (!model.hasOwnProperty("Schema"))
+    if (!model.hasOwnProperty("ModelSchema"))
         createSchema();
 }
 
@@ -1383,7 +1383,7 @@ function createSchema() {
         }
     }
     
-    model.Schema = schema;
+    model.ModelSchema = schema;
 }
 
 // load the current data model for the viewer
