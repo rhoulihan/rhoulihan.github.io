@@ -18,11 +18,7 @@
         },
         "SortKey": {
           "AttributeName": "SK",
-          "AttributeType": "S",
-          "MapFunction": {
-            "treatment": "${timestamp}#${treatmentId}",
-            "admission": "${timestamp}#${roomId}"
-          }
+          "AttributeType": "S"
         }
       },
       "NonKeyAttributes": [
