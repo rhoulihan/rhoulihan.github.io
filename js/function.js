@@ -1285,11 +1285,15 @@ function selectTable() {
 // parse the json file coming from the file loader
 function onReaderLoad(event) {
     model = JSON.parse(event.target.result);
+    
     // Clear out prior schema
     schema = Object.assign({}, DefaultSchema)
+    
     findDataModels();
     loadDataModel();
-    createSchema();
+    
+    if (!model.hasOwnProperty("Schema"))
+        createSchema();
 }
 
 // load the table data models into the view table dropdown
@@ -1378,6 +1382,8 @@ function createSchema() {
             schema.models[type][att.AttributeName].value = fn
         }
     }
+    
+    model.Schema = schema;
 }
 
 // load the current data model for the viewer
