@@ -372,11 +372,35 @@ function importOneTableSchema(text) {
             schema.models[modelName].type = { type: 'String', required: true, value: modelName };
         }
     }
-    addItem("~new~");
+
+    if (schema.data) {
+        let item = {};
+        for (let row of schema.data) {
+            item = {};
+            for (let [key, value] of Object.entries(row)) {
+                item[key] = { 'S': value };
+            }
+            json_data.push(item);
+        }
+        expandValueTemplates();
+        buildContextMenus();
+        show_table();
+    } else {
+        addItem("~new~");
+    }
 }
 
 function exportOneTableSchema() {
-    save(JSON.stringify(schema, null, 4), "schema.json", "json");
+    let output = Object.assign({}, schema, {data: []})
+    let data = output.data
+    for (let row of json_data) {
+        let item = {}
+        for (let [key, value] of Object.entries(row)) {
+            item[key] = Object.values(value)[0]
+        }
+        data.push(item)
+    }
+    save(JSON.stringify(output, null, 4), "schema.json", "json");
 }
 
 // set an attribute value
@@ -1052,8 +1076,11 @@ function generate(isTable) {
             // If its the first cell insert the partition key value and span all the rows for the objects in this partition otherwise skip
             if (count == 0) {
                 if (!showValues && entity) {
-                    PK = dispVal = entity[partition_key].value || entity[partition_key].type ||
-                                    getValue(obj[partition_key]);
+                    if (entity[partition_key]) {
+                        PK = dispVal = entity[partition_key].value || entity[partition_key].type;
+                    } else {
+                        PK = getValue(obj[partition_key]);
+                    }
                 } else {
                     PK = getValue(obj[partition_key]);
                     // set the default display value
@@ -1095,7 +1122,11 @@ function generate(isTable) {
             if (sort_key && sort_key != '') {
                 id = "cell" + tabIndex;
                 if (!showValues && entity) {
-                    SK = dispVal = entity[sort_key].value || entity[sort_key].type || getValue(obj[sort_key]);
+                    if (entity[sort_key]) {
+                        SK = dispVal = entity[sort_key].value || entity[sort_key].type;
+                    } else {
+                        SK = getValue(obj[sort_key]);
+                    }
                 } else {
                     SK = getValue(obj[sort_key]);
                     // set the default display value
@@ -1272,7 +1303,7 @@ function expandValueTemplates() {
             if (!field || !field.value) continue
 
             let text = field.value.replace(/\${(.*?)}/g, (pattern, varName) => {
-                return Object.values(item[varName])[0] || pattern
+                return item[varName] ? Object.values(item[varName])[0] : pattern
             })
             if (text != value) {
                 item[name] = { 'S' : text }
