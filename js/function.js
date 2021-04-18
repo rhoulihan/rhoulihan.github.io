@@ -372,11 +372,35 @@ function importOneTableSchema(text) {
             schema.models[modelName].type = { type: 'String', required: true, value: modelName };
         }
     }
-    addItem("~new~");
+
+    if (schema.data) {
+        let item = {};
+        for (let row of schema.data) {
+            item = {};
+            for (let [key, value] of Object.entries(row)) {
+                item[key] = { 'S': value };
+            }
+            json_data.push(item);
+        }
+        expandValueTemplates();
+        buildContextMenus();
+        show_table();
+    } else {
+        addItem("~new~");
+    }
 }
 
 function exportOneTableSchema() {
-    save(JSON.stringify(schema, null, 4), "schema.json", "json");
+    let output = Object.assign({}, schema, {data: []})
+    let data = output.data
+    for (let row of json_data) {
+        let item = {}
+        for (let [key, value] of Object.entries(row)) {
+            item[key] = Object.values(value)[0]
+        }
+        data.push(item)
+    }
+    save(JSON.stringify(output, null, 4), "schema.json", "json");
 }
 
 // set an attribute value
