@@ -1303,7 +1303,7 @@ function expandValueTemplates() {
             if (!field || !field.value) continue
 
             let text = field.value.replace(/\${(.*?)}/g, (pattern, varName) => {
-                return Object.values(item[varName])[0] || pattern
+                return item[varName] ? Object.values(item[varName])[0] : pattern
             })
             if (text != value) {
                 item[name] = { 'S' : text }
