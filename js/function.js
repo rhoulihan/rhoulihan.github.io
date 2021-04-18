@@ -432,7 +432,7 @@ function setValue(id) {
                 // snapshot model state and apply the change
                 makeChange();
                 assignValue(obj[name], newVal);
-                
+
                 // if this is a type change then adjust the attributes accordingly
                 if (name == "type") {
                     //remove existing attributes
@@ -1156,7 +1156,11 @@ function generate(isTable) {
                 // if this is not a map attribute then add the value cell
                 if (Object.keys(value)[0] != 'M') {
                     if (!showValues && entity && entity[name]) {
-                        dispVal = entity[name].value || entity[name].type || getValue(value);
+                        if (name == 'type') {
+                            dispVal = getValue(value);
+                        } else {
+                            dispVal = entity[name].value || entity[name].type || getValue(value);
+                        }
                     } else {
                         dispVal = getValue(value);
                         if (dispVal == '~new~' && entity && entity[name] && entity[name].default) {
@@ -1285,13 +1289,13 @@ function selectTable() {
 // parse the json file coming from the file loader
 function onReaderLoad(event) {
     model = JSON.parse(event.target.result);
-    
+
     // Clear out prior schema
     schema = Object.assign({}, DefaultSchema)
-    
+
     findDataModels();
     loadDataModel();
-    
+
     if (!model.hasOwnProperty("ModelSchema"))
         createSchema();
 }
@@ -1382,7 +1386,7 @@ function createSchema() {
             schema.models[type][att.AttributeName].value = fn
         }
     }
-    
+
     model.ModelSchema = schema;
 }
 
