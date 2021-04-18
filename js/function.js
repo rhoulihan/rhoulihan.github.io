@@ -1076,8 +1076,11 @@ function generate(isTable) {
             // If its the first cell insert the partition key value and span all the rows for the objects in this partition otherwise skip
             if (count == 0) {
                 if (!showValues && entity) {
-                    PK = dispVal = entity[partition_key].value || entity[partition_key].type ||
-                                    getValue(obj[partition_key]);
+                    if (entity[partition_key]) {
+                        PK = dispVal = entity[partition_key].value || entity[partition_key].type;
+                    } else {
+                        PK = getValue(obj[partition_key]);
+                    }
                 } else {
                     PK = getValue(obj[partition_key]);
                     // set the default display value
@@ -1119,7 +1122,11 @@ function generate(isTable) {
             if (sort_key && sort_key != '') {
                 id = "cell" + tabIndex;
                 if (!showValues && entity) {
-                    SK = dispVal = entity[sort_key].value || entity[sort_key].type || getValue(obj[sort_key]);
+                    if (entity[sort_key]) {
+                        SK = dispVal = entity[sort_key].value || entity[sort_key].type;
+                    } else {
+                        SK = getValue(obj[sort_key]);
+                    }
                 } else {
                     SK = getValue(obj[sort_key]);
                     // set the default display value
