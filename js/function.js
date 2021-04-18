@@ -431,13 +431,29 @@ function setValue(id) {
     if (!found) {
         if (!showValues) {
             //  Editing meta view, so update the type or value template where appropriate
-            let entity = Object.values(schema.models).find(e => e[table.partition_key].value == PK)
-            let field = entity[name]
-            if (field.value) {
-                field.value = newVal
+            if (name == 'type') {
+                if (getValue(obj.type) == newVal)
+                    return;
+                
+                showValues = true;
+                setValue(id);
+                showValues = false;
             } else {
-                field.type = newVal
+                let types = ["String", "Number", "Binary", "Boolean", "Set"]
+                let entity = schema.models[getValue(obj.type)]
+                let field = entity[name]
+                
+                if (newVal == field.type || newVal == field.value)
+                    return;
+                
+                if (types.includes(newVal)) {
+                    field.type = newVal
+                } else {
+                    field.value = newVal
+                }
             }
+            
+            loadDataModel();
         } else {
             // if the value has changed then process it
             if (getValue(obj[name]) != newVal) {
@@ -2023,7 +2039,7 @@ function dynamoToType(dtype) {
     case 'B':
         return 'Binary'
     case 'BOOL':
-        return 'boolean'
+        return 'Boolean'
     case 'S':
         return 'String'
     case 'N':
