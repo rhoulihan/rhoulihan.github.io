@@ -177,6 +177,7 @@ function addItem(id) {
         newItem["type"] = {"S": "~new~"};
     } else {
         var dup = false;
+        
         $.each(json_data, function(idx, obj) {
             if (getValue(obj[table.partition_key]) == getValue(newItem[table.partition_key]) && getValue(obj[table.sort_key]) == getValue(newItem[table.sort_key])) {
                 alert("Duplicate Sort Key values not allowed in the same Partition.");
@@ -230,22 +231,19 @@ function findType(id) {
 // add an attribute to an Item. Note: this does not change the schema until an attibute name is assigned.
 function addAttribute(id) {
     // find the backing object for this Item
-    $.each(json_data, function(idx, obj) {
-        if ( getValue(obj[table.partition_key]) == cellId[id].PK && getValue(obj[table.sort_key]) == cellId[id].SK ) {
-            // if the object has a "type" attribute that is unset then throw an alert and bail
-            if (obj.hasOwnProperty("type") && obj.type.S == "~new~") {
-                alert("You need to assign this object a type before adding new attributes.");
+    let obj = cellId[id].obj;
+    
+    // if the object has a "type" attribute that is unset then throw an alert and bail
+    if (obj.hasOwnProperty("type") && obj.type.S == "~new~") {
+        alert("You need to assign this object a type before adding new attributes.");
 
-                // set the selectId to focus on the type attribute for this item when the table renders and bail out
-                selectId.attr = "type";
-                return false;
-            }
-
-            // snapshot the model state and add a new attribute to the Item
-            makeChange();
-            obj["~new~"] = {"S":"~new~"};
-        }
-    });
+        // set the selectId to focus on the type attribute for this item when the table renders and bail out
+        selectId.attr = "type";
+    } else {
+        // snapshot the model state and add a new attribute to the Item
+        makeChange();
+        obj["~new~"] = {"S":"~new~"};
+    }
 
     // refresh the table view
     loadDataModel();
@@ -260,39 +258,36 @@ function nameAttribute(id) {
         // cancel keypress
         event.preventDefault();
 
-        // split the element id for Item keys and get new attribute value
-        var
-            attribute = $(jq(id)).text(),
+        // find the attribute name
+        var attribute = $(jq(id)).text(),
             type = {};
 
         // find the backing object for the Item
-        $.each(json_data, function(idx, obj) {
-            if ( getValue(obj[table.partition_key]) == cellId[id].PK && getValue(obj[table.sort_key]) == cellId[id].SK && Object.keys(obj).includes("~new~")) {
-                // if the property already exists then bail out
-                if (obj.hasOwnProperty(attribute)) {
-                    return false;
-                }
-                // add the non-key attribute defintion
-                addNonKeyAttribute(obj.type.S, attribute)
+        let obj = cellId[id].obj;
+        
+        // if the property already exists then bail out
+        if (obj.hasOwnProperty(attribute)) {
+            return false;
+        }
+        // add the non-key attribute defintion
+        addNonKeyAttribute(obj.type.S, attribute)
+        
+        // swap the value into the new attribute and delete the placeholder
+        obj[attribute] = obj["~new~"];
+        delete obj["~new~"];
+        selectId = {
+            PK: getValue(obj[table.partition_key]),
+            SK: getValue(obj[table.sort_key]),
+            attr: attribute
+        };
 
-                // swap the value into the new attribute and delete the placeholder
-                obj[attribute] = obj["~new~"];
-                delete obj["~new~"];
-                selectId = {
-                    PK: getValue(obj[table.partition_key]),
-                    SK: getValue(obj[table.sort_key]),
-                    attr: attribute
-                };
-
-                // add this attribute to other objects of this type
-                if (obj.hasOwnProperty("type")) {
-                    $.each(json_data, function (idx, obj1) {
-                        if (obj.type.S == obj1.type.S)
-                            obj1[attribute] = { "S" : "~new~"};
-                    });
-                }
-            }
-        });
+        // add this attribute to other objects of this type
+        if (obj.hasOwnProperty("type")) {
+            $.each(json_data, function (idx, obj1) {
+                if (obj.type.S == obj1.type.S)
+                    obj1[attribute] = { "S" : "~new~"};
+            });
+        }
 
         // if the object had a type then add attribute to other objects of this type
         if (Object.keys(type).length > 0) {
@@ -1101,33 +1096,35 @@ function generate(isTable) {
                     PK = getValue(obj[partition_key]);
                     // set the default display value
                     dispVal = PK;
+                }
 
-                    // if this is the table then its editable
-                    if (isTable) {
-                        id = "cell" + tabIndex;
-                        // if this is a new partition then set the focus on it when the table renders
-                        if (PK == "~new~")
-                            selectId = {
-                                PK: "~new~",
-                                attr: partition_key
-                            };
+                // if this is the table then its editable
+                if (isTable) {
+                    id = "cell" + tabIndex;
+                    // if this is a new partition then set the focus on it when the table renders
+                    if (PK == "~new~")
+                    if (PK == "~new~")
+                    if (PK == "~new~")
+                        selectId = {
+                            PK: "~new~",
+                            attr: partition_key
+                        };
 
-                        if (!boundary.first.hasOwnProperty("PK"))
-                            boundary.first = {
-                                PK: PK,
-                                attr: partition_key
-                            };
-
-                        cellId[id] = {
+                    if (!boundary.first.hasOwnProperty("PK"))
+                        boundary.first = {
                             PK: PK,
-                            attr: partition_key,
-                            type: type,
-                            obj: obj
-                        }
+                            attr: partition_key
+                        };
 
-                        // wrap the partition key value in a contenteditable div using the PK value as element id and hook the relevant handlers
-                        dispVal = buildKeyCell(id);
+                    cellId[id] = {
+                        PK: PK,
+                        attr: partition_key,
+                        type: type,
+                        obj: obj
                     }
+
+                    // wrap the partition key value in a contenteditable div using the cellId value as element id and hook the relevant handlers
+                    dispVal = buildKeyCell(id);
                 }
 
                 // add the cell to the row
@@ -1345,6 +1342,9 @@ function onReaderLoad(event) {
 
     if (!model.hasOwnProperty("ModelSchema"))
         createSchema();
+    else
+        schema = model.ModelSchema;
+        
 }
 
 // load the table data models into the view table dropdown
