@@ -1481,6 +1481,8 @@ function saveModel() {
             "Version": "2.0"
         };
     }
+    
+    delete model.ModelSchema.data;
 
     save(JSON.stringify(model), model.ModelName + ".json", "json");
 }

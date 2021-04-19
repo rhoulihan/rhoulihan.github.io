@@ -2,7 +2,7 @@
     indexes: {
         primary: {
             hash: 'PK',
-            sort: 'SK',
+            sort: 'SK'
         },
         gsi1: {
             hash: 'PK1',
