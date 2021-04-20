@@ -64,6 +64,19 @@ const DefaultSchema = {
     data: [],
 }
 
+const types = {
+    "String": "S", 
+    "Number": "N", 
+    "Binary": "B",
+    "Boolean": "BOOL", 
+    "Null": "NULL",
+    "Map": "M",
+    "List": "L",
+    "StringSet": "SS",
+    "NumberSet": "NS",
+    "BinarySet": "BS"
+}
+
 /*
     Schema defining indexes, entity models.
 */
@@ -398,6 +411,34 @@ function exportOneTableSchema() {
     save(JSON.stringify(output, null, 4), "schema.json", "json");
 }
 
+function setAttributeType(type, item, attr) {
+
+    switch (type) {
+        case "Number":
+            if ( isNaN(getValue(item[attr])) ) 
+                item[name] = {
+                    "N": "0"
+                }
+            else
+                item[name] = {
+                    "N": getValue(item[attr])
+                }
+            break;
+            
+        case "Boolean":
+            item[attr] = {
+                "BOOL": getValue(item[attr]) == "false" || getValue(item[attr]) == "FALSE" || getValue(item[attr]) == "0" ? false : !!getValue(item[attr])
+            };
+            break;
+            
+        default:
+            let newAttr = {};
+            newAttr[types[type]] = getValue(item[attr]);
+            item[attr] = newAttr;
+            break;
+    }
+}
+
 // set an attribute value
 function setValue(id) {
     // get the new value for the attribute and split out the key values and attribute name
@@ -423,7 +464,10 @@ function setValue(id) {
         });
     }
 
-    if (!found) {
+    if (!found) {            
+        let entity = schema.models[getValue(obj.type)]
+        let field = entity[name]
+        
         if (!showValues) {
             //  Editing meta view, so update the type or value template where appropriate
             if (name == 'type') {
@@ -434,15 +478,16 @@ function setValue(id) {
                 setValue(id);
                 showValues = false;
             } else {
-                let types = ["String", "Number", "Binary", "Boolean", "Set"]
-                let entity = schema.models[getValue(obj.type)]
-                let field = entity[name]
                 
                 if (newVal == field.type || newVal == field.value)
                     return;
                 
-                if (types.includes(newVal)) {
-                    field.type = newVal
+                if (Object.keys(types).includes(newVal)) {
+                    $.each(json_data, function(idx, item) {
+                        setAttributeType(newVal, item, name);
+                    });
+                    
+                    field.type = newVal    
                 } else {
                     field.value = newVal
                 }
@@ -467,6 +512,7 @@ function setValue(id) {
                 // snapshot model state and apply the change
                 makeChange();
                 assignValue(obj[name], newVal);
+                setAttributeType(field.type, obj, name);
 
                 // if this is a type change then adjust the attributes accordingly
                 if (name == "type") {
