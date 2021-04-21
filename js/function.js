@@ -179,7 +179,7 @@ function addItem(id) {
     // build the new item
     var newItem = Object.keys(pasteItem).length > 0 ? JSON.parse(JSON.stringify(pasteItem)) : {};
 
-    newItem[table.partition_key] = {"S":(cellId.hasOwnProperty(id) ? cellId[id].PK : "~new~")};
+    newItem[table.partition_key] = {"S":(cellId.hasOwnProperty(id) ? getValue(cellId[id].obj[table.partition_key]) : "~new~")};
 
     if (!newItem.hasOwnProperty(table.sort_key)) {
         if (sortkey_datatype == 'N')
@@ -211,6 +211,7 @@ function addItem(id) {
     json_data.push(newItem);
 
     // refresh the table view
+    showValues = true;
     loadDataModel();
 }
 
@@ -259,6 +260,7 @@ function addAttribute(id) {
     }
 
     // refresh the table view
+    showValues = true;
     loadDataModel();
 }
 
@@ -392,7 +394,7 @@ function importOneTableSchema(text) {
         }
         expandValueTemplates();
         buildContextMenus();
-        show_table();
+        showTable();
     } else {
         addItem("~new~");
     }
@@ -559,18 +561,18 @@ function updateItem(id) {
 
 // remove all items from a partition
 function deletePartition(id) {
-    if (cellId[id].PK == "~new~") {
+    if (getValue(cellId[id].obj[table.partition_key]) == "~new~") {
         alert("New partitions cannot be deleted.");
         return;
     }
 
     alertData = {
         caller: "deletePartition",
-        data: cellId[id].PK
+        data: getValue(cellId[id].obj[table.partition_key])
     };
 
     $("#alertTitle h1").text("Delete Partition");
-    $("#alertText").text(`All items in the '${id}' partition will be deleted, continue?`);
+    $("#alertText").text(`All items in the '${alertData.data}' partition will be deleted, continue?`);
 
     $("#alertModal").show();
 }
@@ -582,8 +584,8 @@ function deleteItem(id) {
         data: id
     };
 
-    var PK = cellId[id].PK,
-        SK = cellId[id].SK,
+    var PK = getValue(cellId[id].obj[table.partition_key]),
+        SK = getValue(cellId[id].obj[table.sort_key]),
         message = "";
 
     if (PK == "~new~")
@@ -604,12 +606,12 @@ function deleteItem(id) {
 }
 
 // refresh the table view
-function show_table() {
+function showTable() {
     // reset the table display
     $("#primary_table").html('');
 
     // build the table html
-    maketable(table);
+    makeTable(table);
 
     // build the HTML and add a tab for each index
     $.each(datamodel.GlobalSecondaryIndexes, function(index, gsi) {
@@ -999,7 +1001,7 @@ function evaluate(item, test) {
 }
 
 // generate the HTML for the table
-function maketable(table) {
+function makeTable(table) {
     // set the working configuration for the HTML generator
     partition_key = table.partition_key;
     sort_key = table.sort_key;
@@ -1009,12 +1011,7 @@ function maketable(table) {
     sortObjectList();
 
     // generate HTML for the table
-    var html = '<thead tabindex="-1"><tr tabindex="-1"><th tabindex="-1" colspan="2" style="text-align: center; width: 40%;"><div>Primary Key<div tabindex="-1" class="bottomright noselect">'; 
-    
-    if (showValues)
-        html += '<input tabindex="-1" onclick="addItemClick(\'\')" type="image" src="./img/add.png" title="Add Partition" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="20" height="20">'
-    
-    html += '</div></div></th>';
+    var html = '<thead tabindex="-1"><tr tabindex="-1"><th tabindex="-1" colspan="2" style="text-align: center; width: 40%;"><div>Primary Key<div tabindex="-1" class="bottomright noselect"><input tabindex="-1" onclick="addItemClick(\'\')" type="image" src="./img/add.png" title="Add Partition" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="20" height="20"></div></div></th>'; 
     
     
     html += generate(true);
@@ -1350,8 +1347,7 @@ function buildButtonHtml(id) {
         title2 = "Delete Item";
     }
 
-    if (showValues)
-        text += '<div tabindex="-1" style="min-width: 35px;" class="bottomright noselect"><input tabindex="-1" onclick=' + add + ' type="image" src="./img/add.png" title="' + title1 + '" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="15" height="15"><input tabindex="-1" onclick=' + remove + ' type="image" src="./img/delete.png" title="' + title2 + '" style="cursor:pointer; background:transparent; float:left; border:0; outline:none;" border = 0 width="15" height="15"></div>'
+    text += '<div tabindex="-1" style="min-width: 35px;" class="bottomright noselect"><input tabindex="-1" onclick=' + add + ' type="image" src="./img/add.png" title="' + title1 + '" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="15" height="15"><input tabindex="-1" onclick=' + remove + ' type="image" src="./img/delete.png" title="' + title2 + '" style="cursor:pointer; background:transparent; float:left; border:0; outline:none;" border = 0 width="15" height="15"></div>'
     
     return text;
 }
@@ -1518,7 +1514,7 @@ function loadDataModel() {
 
     buildContextMenus();
     // render the table
-    show_table();
+    showTable();
 }
 
 // download the model in JSON format
@@ -1740,11 +1736,11 @@ function postResponse() {
         case "cutItem":
         case "copyItem":
         case "deleteItem":
-            var PK = cellId[alertData.data].PK,
-                SK = cellId[alertData.data].SK;
+            var PK = getValue(cellId[alertData.data].obj[table.partition_key]),
+                SK = getValue(cellId[alertData.data].obj[table.sort_key]);
 
             $.each(json_data, function (idx, obj) {
-                if (getValue(obj[datamodel.KeyAttributes.PartitionKey.AttributeName]) == PK && getValue(obj[datamodel.KeyAttributes.SortKey.AttributeName]) == SK)
+                if (getValue(obj[table.partition_key]) == PK && getValue(obj[table.sort_key]) == SK)
                     pasteItem = obj;
                 else
                     new_data.push(obj);
@@ -1757,6 +1753,7 @@ function postResponse() {
     }
 
     if (alertData.caller.startsWith("delete") || alertData.caller.startsWith("cut")) {
+        showValues = true;
         makeChange();
         model.DataModel[modelIndex].TableData = new_data;
         loadDataModel();
@@ -2084,7 +2081,7 @@ function buildContextMenus() {
 
 function toggleSchema() {
     showValues = !showValues
-    show_table();
+    showTable();
 }
 
 function getModel(type) {
@@ -2374,7 +2371,7 @@ $(document).ready(function() {
 
     $("#showValues").on('click', function(e) {
         showValues = !showValues
-        show_table();
+        showTable();
         $("#showValuesCheckbox").prop("checked", showValues);
         e.preventDefault()
     });
