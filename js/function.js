@@ -1009,7 +1009,14 @@ function maketable(table) {
     sortObjectList();
 
     // generate HTML for the table
-    var html = '<thead tabindex="-1"><tr tabindex="-1"><th tabindex="-1" colspan="2" style="text-align: center; width: 40%;"><div>Primary Key<div tabindex="-1" class="bottomright noselect"><input tabindex="-1" onclick="addItemClick(\'\')" type="image" src="./img/add.png" title="Add Partition" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="20" height="20"></div></div></th>';
+    var html = '<thead tabindex="-1"><tr tabindex="-1"><th tabindex="-1" colspan="2" style="text-align: center; width: 40%;"><div>Primary Key<div tabindex="-1" class="bottomright noselect">'; 
+    
+    if (showValues)
+        html += '<input tabindex="-1" onclick="addItemClick(\'\')" type="image" src="./img/add.png" title="Add Partition" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="20" height="20">'
+    
+    html += '</div></div></th>';
+    
+    
     html += generate(true);
 
     // add generated HTML to the primary_table element and set titles and styles
@@ -1147,9 +1154,8 @@ function generate(isTable) {
                 // if this is the table then its editable
                 if (isTable) {
                     id = "cell" + tabIndex;
+                    
                     // if this is a new partition then set the focus on it when the table renders
-                    if (PK == "~new~")
-                    if (PK == "~new~")
                     if (PK == "~new~")
                         selectId = {
                             PK: "~new~",
@@ -1344,7 +1350,10 @@ function buildButtonHtml(id) {
         title2 = "Delete Item";
     }
 
-    return text + '<div tabindex="-1" style="min-width: 35px;" class="bottomright noselect"><input tabindex="-1" onclick=' + add + ' type="image" src="./img/add.png" title="' + title1 + '" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="15" height="15"><input tabindex="-1" onclick=' + remove + ' type="image" src="./img/delete.png" title="' + title2 + '" style="cursor:pointer; background:transparent; float:left; border:0; outline:none;" border = 0 width="15" height="15"></div>'
+    if (showValues)
+        text += '<div tabindex="-1" style="min-width: 35px;" class="bottomright noselect"><input tabindex="-1" onclick=' + add + ' type="image" src="./img/add.png" title="' + title1 + '" style="cursor:pointer; background:transparent; float:right; border:0; outline:none;" border = 0 width="15" height="15"><input tabindex="-1" onclick=' + remove + ' type="image" src="./img/delete.png" title="' + title2 + '" style="cursor:pointer; background:transparent; float:left; border:0; outline:none;" border = 0 width="15" height="15"></div>'
+    
+    return text;
 }
 
 // process value templates and generate values
