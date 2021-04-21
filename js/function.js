@@ -468,7 +468,12 @@ function setValue(id) {
 
     if (!found) {            
         let entity = schema.models[getValue(obj.type)]
-        let field = entity[name]
+        let field = {
+            type: "String"
+        }
+        
+        if (entity)
+            field = entity[name];
         
         if (!showValues) {
             //  Editing meta view, so update the type or value template where appropriate
