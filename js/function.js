@@ -489,6 +489,7 @@ function setValue(id) {
                 if (newVal == field.type || newVal == field.value)
                     return;
                 
+                makeChange();
                 if (Object.keys(types).includes(newVal)) {
                     $.each(json_data, function(idx, item) {
                         setAttributeType(newVal, item, name);
@@ -1538,6 +1539,7 @@ function saveModel() {
         };
     }
     
+    if (model.ModelSchema.data;)
     delete model.ModelSchema.data;
 
     save(JSON.stringify(model), model.ModelName + ".json", "json");
