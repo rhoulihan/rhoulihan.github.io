@@ -1539,8 +1539,8 @@ function saveModel() {
         };
     }
     
-    if (model.ModelSchema.data;)
-    delete model.ModelSchema.data;
+    if (model.ModelSchema.data)
+        delete model.ModelSchema.data;
 
     save(JSON.stringify(model), model.ModelName + ".json", "json");
 }

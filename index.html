@@ -87,29 +87,34 @@
                 <h3 tabindex="-1">Using the Amazon DynamoDB Data Modeler</h3>
                 <p>Certain elements in the Table view are decorated with controls that can be used for the following actions:</p>
                 <p>Click the swap '<image tabindex="-1" src="./img/swap.png" width="20" height="20" style="border: none">' control to add a new Table or select an existing Table from the current Model to view.</p>
+                <p>Click the binoculars '<image tabindex="-1" src="./img/binoculars.png" width="20" height="20" style="border: none">' control to define and run a query against the sample data loaded in the modeler.</p>
                 <p>Click the back '<image tabindex="-1" src="./img/back.png" width="20" height="20" style="border: none">' control to undo a change to the currently selected Table. The modeler caches up to 50 changes for each Table in the currently loaded Model. The change cache is cleared when a new Model is loaded.</p>
-                <p>Finally, click the add '<image tabindex="-1" src="./img/add.png" width="20" height="20" style="border: none">' control:</p>
+                <p>Click the wrench '<i class="fas fa-wrench" width="20" height="20" style="border: none"></i>' control to switch to 'schema view' to edit attribute types and Value Templates. See 'Editing Schema' section below for details.</p>
+                <p>Click the sliders '<i class="fas fa-sliders-h" width="20" height="20" style="border: none"></i>' control to switch back to 'values view' and edit attribute values.</p>
+                <p>Click the plus '<image tabindex="-1" src="./img/add.png" width="20" height="20" style="border: none">' control:</p>
                 <ol>
                     <li>On the Table Name tab to create a new index:</li><image tabindex="-1" src="./img/tab.png"></image><br><br>
                     <li>In the Primary Key header cell to add a new partition:</li><image tabindex="-1" src="./img/primaryKey.png"></image><br><br>
                     <li>In a Partition Key value cell to add a new item to a partition:</li><image tabindex="-1" src="./img/PK.png"></image><br><br>
                     <li>In a Sort Key value cell to add a new attribute to an Item:</li><image tabindex="-1" src="./img/SK.png"></image><br><br>
                 </ol>
+                <p>Finally, click the minus '<image tabindex="-1" src="./img/delete.png" width="20" height="20" style="border: none">' control:</p>
+                <ol>
+                    <li>In a Partition Key value cell to delete a partition and all Items in it:</li><image tabindex="-1" src="./img/PK.png"></image><br><br>
+                    <li>In a Sort Key value cell to delete an Item:</li><image tabindex="-1" src="./img/SK.png"></image><br><br>
+                </ol>
                 <p>The following image shows a data model for tracking patients, room assignments, and treatments for a hospital resource scheduling service originally created in NoSQL Workbench for DynamoDB (<a href="./data/Hospital.json" download>Hospital.json</a>):</p>
                 <image tabindex="-1" src="./img/model.png" class="center"></image><br><br>
-                <p>Clicking the add '<image src="./img/add.png" width="15" height="15" style="border: none">' symbol in the "Primary Key" field of the Table header will add a new Item to the bottom of the Table, as shown in the following image:</p>
+                <p>Clicking the add '<image src="./img/add.png" width="15" height="15" style="border: none"></image>' symbol in the "Primary Key" field of the Table header will add a new Item to the bottom of the Table, as shown in the following image</p>
                 <image src="./img/model1.png" class="center"></image><br><br>
-                <p>Clicking the add '<image src="./img/add.png" width="15" height="15" style="border: none">' symbol in an existing Partition Value cell or changing the PK value of a new or existing Partition will move or create Items in the specified Partition.</p>
+                <p>Clicking the add '<image src="./img/add.png" width="15" height="15" style="border: none"></image>' symbol in an existing Partition Value cell or changing the PK value of a new or existing Partition will move or create Items in the specified Partition.</p>
                 <image src="./img/model2.png" class="center"></image><br><br>
 
                 <p>Changing the "type" attribute value will cause the Item to be annoted with attributes from the corresponding Item template:</p>
                 <image src="./img/model3.png" class="center"></image><br><br>
 
-                <p>Toggling the "showSchema" wrench icon on the right of the table will display the underlying model schema. The icon then changes to sliders which when clicked will redisplay the table data. When displaying the "schema" view, the attribute types and values templates are displayed instead of the table values.</p>
-                <image src="./img/show-schema.png" class="center"></image><br><br>
 
-
-                <p>Clicking the add '<image src="./img/add.png" width="15" height="15" style="border: none">' symbol in a Sort Key value cell will add a new attribute to the Item. When new attribtes are added to an existing Item the Attribute Name becomes editable:</p>
+                <p>Clicking the add '<image src="./img/add.png" width="15" height="15" style="border: none"></image>' symbol in a Sort Key value cell will add a new attribute to the Item. When new attribtes are added to an existing Item the Attribute Name becomes editable:</p>
                 <image src="./img/model4.png" class="center"></image><br><br>
                 <p>When the attribute name is assigned, all objects of that type will be annotated with the new attribute:</p>
                 <image src="./img/model5.png" class="center"></image><br><br>
@@ -148,14 +153,18 @@
                     <li>Edit Value Template - Define a value template to generate the Attribute value.</li>
                     <li>Generate Value - Inserts either an ISO Date or UUID string as the Attribute value.</li>
                 </ol>
+
+                <h4 tabindex="-1">Modifying Schema Models</h4>
+                <p>Toggling the wrench '<i class="fas fa-wrench" width="20" height="20" style="border: none"></i>' icon on the right of the table will display the underlying model schema. The icon then changes to sliders '<i class="fas fa-sliders-h" width="20" height="20" style="border: none"></i>' which when clicked will redisplay the table data. When displaying the "Schema" view, the attribute types and values templates are displayed instead of the table values.</p>
+                <image src="./img/show-schema.png" class="center"></image><br><br>
                 <h3 tabindex="-1">Value Templates</h3>
-                <p>Attributes can be assigned value templates to generate their Associated values. Value templates are associated to Attributes by Item type. When an Item is created or modified the type of the Item will determine any value templates that should be used to generate Attribute values. When the 'Edit Value Template' option is selected the following modal dialogue will appear:</p>
-                <image src="./img/MappingFunction.png"></image><br><br>
-                <p>Currently the only operation supported for value template is concatenation of other Attributes into a composite attribute. To combine Attribute values simply reference the attribute name as shown in the screenshot. Any text outside of the '${}' syntax will appear as typed in the final value.</p>
+                <p>Attributes can be assigned value templates to generate values. Value templates are associated to Attributes by Item type. When an Item is created or modified the type of the Item will determine any value templates that should be used to generate Attribute values. Value Templates can be assigned directly by editing values in the "Schema" view or via dialog by selecting the "Edit Value Template" option from the context menu. Assigning a Value Template to an attribute will apply the template to all Items of the same model type.</p>
+                <p>Currently the only operation supported for value template is concatenation of other Attributes into a composite attribute. To combine Attribute values simply reference the attribute name using '${name}' as shown in the screenshot. Any text outside of the '${}' syntax will appear as typed in the final value. In the model defined below the Value Template for the Item attribute 'SK' of the 'treatment' Schema Model is defined as "${timestamp}#${treatmentId}". This will cause the modeler to generate an 'SK' attribute with a value similar to "2020-11-25T12:00:00#T1" using the values of the 'timestamp' and 'treatmentId' attributes for any Item with a 'type' value of 'treatment'.</p>
+                <image src="./img/valueTemplate.png"></image><br><br>
+                
 
                 <h3 tabindex="-1">OneTable Integration</h3>
-                <p>If you use <a href="https://github.com/sensedeep/dynamodb-onetable">OneTable</a> you can now import and export your schema files into and out of the DynamoDB Datamodel using the convenient links on the Side Panel menu. To import, simply paste your JSON OneTable Schema into the dialog and you will be able to create Items using the Entity types defined in the OneTable schema. When creating items, set the "type" attribute to the entity type to populate all the other entity attributes. Currently only Table and Entity schema are imported. Exported schemas are saved to a file in a multi-line JSON format.</p>
-                <image src="./img/OneTable.png"></image><br><br>
+                <p>If you use <a href="https://github.com/sensedeep/dynamodb-onetable">OneTable</a> you can now import and export your schema files to/from the DynamoDB Modeler using the convenient links on the Side Panel menu. To import, simply click the import link and specify the location of your OneTable json or javascript schema file. The modeler will convert any data objects from OneTable format and load all the ValueTemplates and Shema models defined in the OneTable schema.  After the schema is imported you will be able to create Items using OneTable model types. Exported schemas are saved to a file in a multi-line JSON format.</p>
                 <p>That should be enough to get you going. Click the '☰ menu' icon in the upper right corner to import an existing model from NoSQL Workbench for DynamoDB or use the modeler to build a data model for your DynamoDB Table from scratch.</p>
                 <p>Have ideas or feature requests? Ping me on <a href="https://twitter.com/houlihan_rick">Twitter</a> and let me know!</p>
             </div>
