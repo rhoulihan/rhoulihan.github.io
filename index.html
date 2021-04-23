@@ -153,14 +153,16 @@
                     <li>Edit Value Template - Define a value template to generate the Attribute value.</li>
                     <li>Generate Value - Inserts either an ISO Date or UUID string as the Attribute value.</li>
                 </ol>
-
-                <h4 tabindex="-1">Modifying Schema Models</h4>
-                <p>Toggling the wrench '<i class="fas fa-wrench" width="20" height="20" style="border: none"></i>' icon on the right of the table will display the underlying model schema. The icon then changes to sliders '<i class="fas fa-sliders-h" width="20" height="20" style="border: none"></i>' which when clicked will redisplay the table data. When displaying the "Schema" view, the attribute types and values templates are displayed instead of the table values.</p>
-                <image src="./img/show-schema.png" class="center"></image><br><br>
-                <h3 tabindex="-1">Value Templates</h3>
+                <br>
+                <h3 tabindex="-1">Schema View</h3>
+                <p>Toggling the wrench '<i class="fas fa-wrench" width="20" height="20" style="border: none"></i>' icon on the right of the table will display the Schema Models of the object types associated with the sample data. When displaying the "Schema" view, the attribute types and values templates are displayed instead of the table values. Click the sliders '<i class="fas fa-sliders-h" width="20" height="20" style="border: none"></i>' icon to return the Data View. </p>
+                <br><image src="./img/show-schema.png" class="center"></image><br><br>
+                <h4 tabindex="-1">Value Templates</h4>
                 <p>Attributes can be assigned value templates to generate values. Value templates are associated to Attributes by Item type. When an Item is created or modified the type of the Item will determine any value templates that should be used to generate Attribute values. Value Templates can be assigned directly by editing values in the "Schema" view or via dialog by selecting the "Edit Value Template" option from the context menu. Assigning a Value Template to an attribute will apply the template to all Items of the same model type.</p>
-                <p>Currently the only operation supported for value template is concatenation of other Attributes into a composite attribute. To combine Attribute values simply reference the attribute name using '${name}' as shown in the screenshot. Any text outside of the '${}' syntax will appear as typed in the final value. In the model defined below the Value Template for the Item attribute 'SK' of the 'treatment' Schema Model is defined as "${timestamp}#${treatmentId}". This will cause the modeler to generate an 'SK' attribute with a value similar to "2020-11-25T12:00:00#T1" using the values of the 'timestamp' and 'treatmentId' attributes for any Item with a 'type' value of 'treatment'.</p>
-                <image src="./img/valueTemplate.png"></image><br><br>
+                <p>Currently the only operation supported for value template is concatenation of other Attributes into a composite attribute. To combine Attribute values simply reference the attribute name using '${name}' as shown in the screenshot. Any text outside of the '${}' syntax will appear as typed in the final value. In the model defined below the Value Template for the Item attribute 'SK' of the 'treatment' Schema Model is defined as follows:<br>
+                    <br><code>"${timestamp}#${treatmentId}"</code><br><br>
+                This will cause the modeler to generate an 'SK' attribute with a value similar to "2020-11-25T12:00:00#T1" using the values of the 'timestamp' and 'treatmentId' attributes for any Item with a 'type' value of 'treatment'.</p>
+                <br><image src="./img/valueTemplate.png" class="center"></image><br><br>
                 
 
                 <h3 tabindex="-1">OneTable Integration</h3>
