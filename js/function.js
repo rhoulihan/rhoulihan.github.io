@@ -429,7 +429,7 @@ function setAttributeType(type, item, attr) {
             
         case "Boolean":
             item[attr] = {
-                "BOOL": getValue(item[attr]) == "false" || getValue(item[attr]) == "FALSE" || getValue(item[attr]) == "0" ? false : !!getValue(item[attr])
+                "BOOL": getValue(item[attr]).toLowerCase() == "false" || getValue(item[attr]) == "0" ? false : !!getValue(item[attr])
             };
             break;
             
