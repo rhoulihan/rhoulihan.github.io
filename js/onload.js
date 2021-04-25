@@ -197,9 +197,24 @@ $(document).ready(function() {
         }
     });
 
-    $("#source").on('click', function() {
+    $("#loadModel").on('click', function() {
         $("#mySidenav").css("width","0");
         $("#fileDiv").show();
+        
+        $("#fileType").text("Load Model");
+        $("#loadType").text("Select a model:");
+        
+        alertData.caller = "loadModel";
+    });
+    
+    $("#loadCreds").on('click', function() {
+        $("#mySidenav").css("width","0");
+        $("#fileDiv").show();
+        
+        $("#fileType").text("Load Credentials");
+        $("#loadType").text("Select credentials file:");
+        
+        alertData.caller = "loadCreds";
     });
 
     $(".addGSI").on('click', function() {

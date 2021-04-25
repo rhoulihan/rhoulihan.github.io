@@ -47,9 +47,11 @@ var // container for the data model
     // number of filters for the currently loaded query
     numFilters = 0,
     // collection of items matching the current query
-    match_data = [];
+    match_data = [],    
     // Show values vs types/templates
-    showValues = true;
+    showValues = true,
+    // AWS account credentials
+    credentials;
 
 const DefaultSchema = {
     indexes: {},

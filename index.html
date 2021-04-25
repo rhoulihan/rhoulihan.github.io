@@ -68,8 +68,9 @@
         <a tabindex="-1" href="#" id="createModel">Create Model</a>
         <a tabindex="-1" href="#" id="clearIdx">Clear Indexes</a>
         <a tabindex="-1" href="#" id="reload">Clear Model</a>
-        <a tabindex="-1" href="#" id="source">Load Model</a>
+        <a tabindex="-1" href="#" id="loadModel">Load Model</a>
         <a tabindex="-1" href="#" id="saveModel">Save Model</a>
+        <a tabindex="-1" href="#" id="loadCreds">Load Credentials</a>
         <a tabindex="-1" href="#" id="importSchema">Import OneTable</a>
         <a tabindex="-1" href="#" id="exportSchema">Export OneTable</a>
     </div>
@@ -252,8 +253,8 @@
     <!-- Select File Dialogue -->
     <div id="fileDiv" class="modal">
         <div style="width: 400px;" class="modal-content">
-            <h1 style="text-align: center">Load Model</h1>
-            <label class="key_label">Select a model:</label>
+            <h1 id="fileType" style="text-align: center">Load Model</h1>
+            <label id="loadType" class="key_label">Select a model:</label>
             <div class="key_group">
                 <input id="importFile" style="margin-top: 5px;" type="file">
             </div>

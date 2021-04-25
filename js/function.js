@@ -910,19 +910,33 @@ function selectTable() {
 
 // parse the json file coming from the file loader
 function onReaderLoad(event) {
-    model = JSON.parse(event.target.result);
+    if (alertData.caller == "loadModel") {
+        model = JSON.parse(event.target.result);
 
-    // Clear out prior schema
-    schema = Object.assign({}, DefaultSchema)
+        // Clear out prior schema
+        schema = Object.assign({}, DefaultSchema)
 
-    findDataModels();
-    loadDataModel();
+        findDataModels();
+        loadDataModel();
 
-    if (!model.hasOwnProperty("ModelSchema"))
-        createSchema();
-    else
-        schema = model.ModelSchema;
-        
+        if (!model.hasOwnProperty("ModelSchema"))
+            createSchema();
+        else
+            schema = model.ModelSchema;
+    } else {
+        credentials = JSON.parse(event.target.result);
+        initDynamoClient();
+    }
+    
+    $("#importFile").val("");
+    alertData = {};
+}
+
+function initDynamoClient() {
+    AWS.config.update(credentials);
+    dynamodb = new AWS.DynamoDB.DocumentClient({maxRetries: 20, httpOptions: {connectTimeout: 500}});
+    
+    alert("Client initialized.");
 }
 
 // load the table data models into the view table dropdown
