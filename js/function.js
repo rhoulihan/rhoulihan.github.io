@@ -973,18 +973,15 @@ function initDynamoClient() {
             
             // initialize the dropdown
             $("#acctTable").empty();
-            $("#saveTable").empty();
             // add the default selected item
             $("#acctTable").append('<option disabled="disabled" selected="selected" value="none"> -- none -- </option>');
-            $("#saveTable").append('<option disabled="disabled" selected="selected" value="none"> -- none -- </option>');
             
             $.each(data.TableNames, function(idx, table) {
                 $("#acctTable").append(`<option value="${table}">${table}</option>`);
-                $("#saveTable").append(`<option value="${table}">${table}</option>`);
             });
             
-            $("#saveToTable").show();
             $("#loadFromTable").show();
+            $("#saveToTable").show();
             $("#loadCreds").hide();
         }
     });
@@ -1006,16 +1003,20 @@ function describeTable(params) {
     });    
 }
 
+function togglePKdiv() {
+    $("#customPKDiv").toggle($("#customPK").is(":checked"));
+}
+
 function saveToTable() {
     var params = {
-        TableName: $("#saveTable").val()
+        TableName: $("#acctTable").val()
     };
     
     describeTable(params);
 
     let item = {};
-    item[alertData.PK] = $("#txtSaveKey").val();
-    item[alertData.SK] = "A";
+    item[alertData.PK] = "_schema";
+    item[alertData.SK] = model.ModelName;
     item.Schema = model;
 
     params.Item = item;
@@ -1030,37 +1031,68 @@ function saveToTable() {
     });
 
     alertData = {};
-    $("#saveToTableDiv").hide();
+    $("#schemaTableDiv").hide();
+}
+
+function schemaTable() {
+    initDynamoClient();
+    if (alertData.caller == "save")
+        saveToTable();
+    else
+        loadFromTable();
+}
+
+function loadModels() {
+    if (alertData.caller == "save")
+        return;
+    
+    var params = {
+        TableName: $("#acctTable").val()
+    };
+
+    describeTable(params);
+    
+    params = {
+        TableName: $("#acctTable").val(),
+        KeyConditionExpression: "#pk = :val",
+        ExpressionAttributeNames: {
+            "#pk": alertData.PK
+        },
+        ExpressionAttributeValues: {
+            ":val": "_schema"
+        }
+    };
+    
+    alertData.models = {};
+    
+    client.query(params, function(err, data) {
+        if (err) { 
+            if (err.message.includes("ExpressionAttributeNames"))
+                loadModels();
+            else
+                console.log(err);
+        } else {
+            // initialize the dropdown
+            $("#selectModel").empty();
+            // add the default selected item
+            $("#selectModel").append('<option disabled="disabled" selected="selected" value="none"> -- none -- </option>');
+            
+            $.each(data.Items, function(idx, item) {
+                $("#selectModel").append(`<option value="${item[alertData.SK]}">${item[alertData.SK]}</option>`);
+                alertData.models[item[alertData.SK]] = item.Schema;
+            });
+            
+            $("#modelDiv").show();
+        }
+    });
 }
 
 function loadFromTable() {
-    var params = {
-            TableName: $("#acctTable").val()
-        };
-
-    describeTable(params);
-
-    params.Key = {};
-    params.Key[alertData.PK] = $("#txtSchemaKey").val();
-    params.Key[alertData.SK] = "A";
+    model = alertData.models[$("#selectModel").val()];
     alertData = {};
-
-    client.get(params, function (err, data) {
-        if (err) {
-            if (err.message.includes("The provided key element"))
-                loadFromTable();
-            else
-                console.log(err);
-        } else { 
-            model = data.Item.Schema;
-            modelIndex = 0;
-
-            loadDataModel();
-
-            alertData = {};
-            $("#loadFromTableDiv").hide();
-        }
-    });
+    $("#modelDiv").hide();
+    $("#schemaTableDiv").hide();
+    loadDataModel();
 }
 
 function scanTable() {

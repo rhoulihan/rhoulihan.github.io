@@ -53,8 +53,8 @@ $(document).ready(function() {
         $("#selectTypeDiv").hide();
         $("#txtMapFunction").prop("disabled", false);
         $("#btnDefineMap").prop("disabled", false);
-        $("#loadFromTableDiv").hide();
-        $("#saveToTableDiv").hide();
+        $("#schemaTableDiv").hide();
+        $("#modelDiv").hide();
 
         initQuery();
     });
@@ -228,13 +228,18 @@ $(document).ready(function() {
     });
     
     $("#saveToTable").on('click', function() {
+        alertData.caller = "save";
+        $("#lblLoadSave").text("Save to Table");
         $("#mySidenav").css("width","0");
-        $("#saveToTableDiv").show();
+        $("#schemaTableDiv").show();
     });
     
     $("#loadFromTable").on('click', function() {
+        alertData.caller = "load";
+        $("#selectModel").val("none");
+        $("#lblLoadSave").text("Load from Table");
         $("#mySidenav").css("width","0");
-        $("#loadFromTableDiv").show();
+        $("#schemaTableDiv").show();
     });
 
     $(".addGSI").on('click', function() {

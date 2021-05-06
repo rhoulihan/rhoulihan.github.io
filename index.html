@@ -276,37 +276,21 @@
         </div>
     </div>
 
-    <!-- Load From Table Dialogue -->
-    <div id="loadFromTableDiv" class="modal">
+    <!-- Load/Save Schema Table Dialogue -->
+    <div id="schemaTableDiv" class="modal">
         <div style="width: 500px;" class="modal-content">
-            <h1 style="text-align: center">Load from Table</h1>
+            <h1 id="lblLoadSave" style="text-align: center">Load from Table</h1>
             <label class="key_label">Select a Table:</label>
-            <select id="acctTable" class="viewTable center">
+            <select id="acctTable" class="viewTable center" onchange="loadModels()">
             </select>
+            <div id="modelDiv" style="display: none">
                 <br>
-                <label class="key_label">Enter Partition Key:</label>
-                <input id="txtSchemaKey" type="text" style="width: 180px; margin: 0 auto;" autocomplete="off">
-            <div class="centered-buttons">
-                <button class="cancel">CANCEL</button>
-                <button id="btnLoadFromTable" class="btnOK" onclick="loadFromTable()">OK</button>
+                <label class="key_label">Select a Model:</label>
+                <select id="selectModel" class="center"></select>
             </div>
-        </div>
-    </div>
-
-    <!-- Save to Table Dialogue -->
-    <div id="saveToTableDiv" class="modal">
-        <div style="width: 500px;" class="modal-content">
-            <h1 style="text-align: center">Save to Table</h1>
-            <label class="key_label">Select a Table:</label>
-            <select id="saveTable" class="viewTable center">
-            </select>
-            <br>
-            <label class="key_label">Enter Partition Key:</label>
-            <input id="txtSaveKey" type="text" class="center" style="width: 180px; margin: 0 auto;" autocomplete="off">
-            <br>
             <div class="centered-buttons">
                 <button class="cancel">CANCEL</button>
-                <button id="btnLoadFromTable" class="btnOK" onclick="saveToTable()">OK</button>
+                <button id="btnLoadFromTable" class="btnOK" onclick="schemaTable()">OK</button>
             </div>
         </div>
     </div>
