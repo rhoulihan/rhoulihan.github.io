@@ -908,6 +908,29 @@ function selectTable() {
     $("#selectTableDiv").show();
 }
 
+function getCookie(cname) {
+  var name = cname + "=";
+  var decodedCookie = decodeURIComponent(document.cookie);
+  var ca = decodedCookie.split(';');
+  for(var i = 0; i < ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
+}
+
+function setCookie(cname,cvalue,exdays) {
+  var d = new Date();
+  d.setTime(d.getTime() + (exdays*24*60*60*1000));
+  var expires = "expires=" + d.toGMTString();
+  document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
 // parse the json file coming from the file loader
 function onReaderLoad(event) {
     if (alertData.caller == "loadModel") {
@@ -917,15 +940,18 @@ function onReaderLoad(event) {
         schema = Object.assign({}, DefaultSchema)
 
         findDataModels();
-        loadDataModel();
 
-        if (!model.hasOwnProperty("ModelSchema"))
-            createSchema();
-        else
-            schema = model.ModelSchema;
+        if (model.hasOwnProperty("ModelSchema")) {
+            model.DataModel[modelIndex].ModelSchema = model.ModelSchema;
+            delete model.ModelSchema;
+        }
+        
+        loadDataModel();
     } else {
         credentials = JSON.parse(event.target.result);
+        
         initDynamoClient();
+        setCookie("credentials", JSON.stringify(credentials), 365);
     }
     
     $("#importFile").val("");
@@ -934,9 +960,154 @@ function onReaderLoad(event) {
 
 function initDynamoClient() {
     AWS.config.update(credentials);
-    dynamodb = new AWS.DynamoDB.DocumentClient({maxRetries: 20, httpOptions: {connectTimeout: 500}});
+    dynamodb = new AWS.DynamoDB();
+    client = new AWS.DynamoDB.DocumentClient({maxRetries: 20, httpOptions: {connectTimeout: 500}});
     
-    alert("Client initialized.");
+    var params = {};
+    
+    dynamodb.listTables(params, function(err, data) {
+        if (err) 
+            console.log(err, err.stack);
+        else {
+            accountTables = data;
+            
+            // initialize the dropdown
+            $("#acctTable").empty();
+            $("#saveTable").empty();
+            // add the default selected item
+            $("#acctTable").append('<option disabled="disabled" selected="selected" value="none"> -- none -- </option>');
+            $("#saveTable").append('<option disabled="disabled" selected="selected" value="none"> -- none -- </option>');
+            
+            $.each(data.TableNames, function(idx, table) {
+                $("#acctTable").append(`<option value="${table}">${table}</option>`);
+                $("#saveTable").append(`<option value="${table}">${table}</option>`);
+            });
+            
+            $("#saveToTable").show();
+            $("#loadFromTable").show();
+            $("#loadCreds").hide();
+        }
+    });
+}
+
+function describeTable(params) { 
+    dynamodb.describeTable(params, function (err, data) {
+        if (err) 
+            console.log(err, err.stack); // an error occurred
+        else {
+            $.each(data.Table.KeySchema, function (idx, key) {
+                if (key.KeyType == "HASH") {
+                    alertData.PK = key.AttributeName;
+                } else {
+                    alertData.SK = key.AttributeName;
+                }
+            });
+        }
+    });    
+}
+
+function saveToTable() {
+    var params = {
+        TableName: $("#saveTable").val()
+    };
+    
+    describeTable(params);
+
+    let item = {};
+    item[alertData.PK] = $("#txtSaveKey").val();
+    item[alertData.SK] = "A";
+    item.Schema = model;
+
+    params.Item = item;
+
+    client.put(params, function (err, data) {
+        if (err) {
+            if (err.message.includes("Missing the key"))
+                saveToTable();
+            else
+                console.log(err);
+        }
+    });
+
+    alertData = {};
+    $("#saveToTableDiv").hide();
+}
+
+function loadFromTable() {
+    var params = {
+            TableName: $("#acctTable").val()
+        };
+
+    describeTable(params);
+
+    params.Key = {};
+    params.Key[alertData.PK] = $("#txtSchemaKey").val();
+    params.Key[alertData.SK] = "A";
+    alertData = {};
+
+    client.get(params, function (err, data) {
+        if (err) {
+            if (err.message.includes("The provided key element"))
+                loadFromTable();
+            else
+                console.log(err);
+        } else { 
+            model = data.Item.Schema;
+            modelIndex = 0;
+
+            loadDataModel();
+
+            alertData = {};
+            $("#loadFromTableDiv").hide();
+        }
+    });
+}
+
+function scanTable() {
+    var params = {
+        TableName: $("#acctTable").val()
+    };  
+    
+    model = {
+        "ModelName": "Hospital",
+        "ModelMetadata": {
+            "Author": "",
+            "DateCreated": "Nov 24, 2020, 08:00 PM",
+            "DateLastModified": "Apr 17, 2021, 01:07 PM",
+            "Description": "",
+            "AWSService": "Amazon DynamoDB",
+            "Version": "2.0"
+        },
+        DataModel: [{
+            TableName: $("#acctTable").val() 
+        }]
+    };
+    
+    dynamodb.describeTable(function(err, data) {
+        
+    });
+    
+    params.Limit = $("#txtItemCount").val();
+    
+    client.scan(params, onScan);
+    //loadDataModel();
+}
+
+function onScan(err, data) {
+    if (err) {
+        console.error("Unable to scan the table. Error JSON:", JSON.stringify(err, null, 2));
+    } else {
+        
+        data.Items.forEach(function(item) {
+            alert(JSON.stringify(item));
+            // TODO - load Items into tableData
+        });
+        
+        if (typeof data.LastEvaluatedKey != "undefined") {
+            params.ExclusiveStartKey = data.LastEvaluatedKey;
+            docClient.scan(params, onScan);
+        }
+    }
 }
 
 // load the table data models into the view table dropdown
@@ -1026,12 +1197,18 @@ function createSchema() {
         }
     }
 
-    model.ModelSchema = schema;
+    datamodel.ModelSchema = schema;
 }
 
 // load the current data model for the viewer
 function loadDataModel() {
     datamodel = model.DataModel[modelIndex];
+    
+    if (!datamodel.hasOwnProperty("ModelSchema"))
+        createSchema();
+    else
+        schema = datamodel.ModelSchema;
+    
     table = {
         name: datamodel.TableName,
         partition_key: datamodel.KeyAttributes.PartitionKey.AttributeName,
@@ -1074,8 +1251,8 @@ function saveModel() {
         };
     }
     
-    if (model.ModelSchema.data)
-        delete model.ModelSchema.data;
+    if (datamodel.ModelSchema.data)
+        delete datamodel.ModelSchema.data;
 
     save(JSON.stringify(model), model.ModelName + ".json", "json");
 }

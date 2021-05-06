@@ -1,5 +1,12 @@
 // UI logic and onclick handlers
 $(document).ready(function() {
+    var credStr = getCookie("credentials");
+    
+    if (credStr != "") {
+        credentials = JSON.parse(credStr);
+        initDynamoClient();
+    }
+    
     //file upload
     $("#importFile").change(function(e) {
         $("#fileDiv").hide();
@@ -18,7 +25,8 @@ $(document).ready(function() {
             alert("Map Functions cannot reference the destination attribute.");
             return;
         }
-        let valueTemplate = $("#txtMapFunction").val();
+        
+        var valueTemplate = $("#txtMapFunction").val();
         debugger;
         makeChange();
         createMapping(alertData.data.type, alertData.caller, valueTemplate);
@@ -45,6 +53,8 @@ $(document).ready(function() {
         $("#selectTypeDiv").hide();
         $("#txtMapFunction").prop("disabled", false);
         $("#btnDefineMap").prop("disabled", false);
+        $("#loadFromTableDiv").hide();
+        $("#saveToTableDiv").hide();
 
         initQuery();
     });
@@ -215,6 +225,16 @@ $(document).ready(function() {
         $("#loadType").text("Select credentials file:");
         
         alertData.caller = "loadCreds";
+    });
+    
+    $("#saveToTable").on('click', function() {
+        $("#mySidenav").css("width","0");
+        $("#saveToTableDiv").show();
+    });
+    
+    $("#loadFromTable").on('click', function() {
+        $("#mySidenav").css("width","0");
+        $("#loadFromTableDiv").show();
     });
 
     $(".addGSI").on('click', function() {

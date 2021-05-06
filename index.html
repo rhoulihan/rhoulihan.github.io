@@ -10,13 +10,11 @@
     <meta http-equiv=“Expires” content=”0″>
     <link href="./css/main.css" rel="stylesheet">
     <script src="./js/jquery-3.5.1.min.js"></script>
-    <link href="./css/bootstrap-3.3.7.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.1/jquery.contextMenu.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.1/jquery.contextMenu.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.1/jquery.ui.position.js"></script>
     <script src="https://kit.fontawesome.com/8c5103e12c.js" crossorigin="anonymous"></script>
-    <script src="./js/bootstrap-3.3.7.min.js"></script>
     <script type="text/javascript" src="./js/aws-sdk-2.892.0.min.js"></script>
     <script type="text/javascript" src="./js/globals.js"></script>
     <script type="text/javascript" src="./js/function.js"></script>
@@ -69,8 +67,10 @@
         <a tabindex="-1" href="#" id="clearIdx">Clear Indexes</a>
         <a tabindex="-1" href="#" id="reload">Clear Model</a>
         <a tabindex="-1" href="#" id="loadModel">Load Model</a>
-        <a tabindex="-1" href="#" id="saveModel">Save Model</a>
+        <a tabindex="-1" href="#" id="saveModel">Export Model</a>
         <a tabindex="-1" href="#" id="loadCreds">Load Credentials</a>
+        <a tabindex="-1" href="#" id="loadFromTable" style="display:none">Load from Table</a>
+        <a tabindex="-1" href="#" id="saveToTable" style="display:none">Save to Table</a>
         <a tabindex="-1" href="#" id="importSchema">Import OneTable</a>
         <a tabindex="-1" href="#" id="exportSchema">Export OneTable</a>
     </div>
@@ -268,13 +268,46 @@
     <div id="selectTableDiv" class="modal">
         <div style="width: 500px;" class="modal-content">
             <h1 style="text-align: center">Change Table</h1>
-            <div class="centered-buttons">
-                <label class="key_label">Select a Table to view:</label>
-                <select id="viewTable" class="viewTable center">
-                </select>
-            </div>
+            <label class="key_label">Select a Table to view:</label>
+            <select id="viewTable" class="viewTable center">
+            </select>
             <div class="centered-buttons">
                 <button class="cancel">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load From Table Dialogue -->
+    <div id="loadFromTableDiv" class="modal">
+        <div style="width: 500px;" class="modal-content">
+            <h1 style="text-align: center">Load from Table</h1>
+            <label class="key_label">Select a Table:</label>
+            <select id="acctTable" class="viewTable center">
+            </select>
+                <br>
+                <label class="key_label">Enter Partition Key:</label>
+                <input id="txtSchemaKey" type="text" style="width: 180px; margin: 0 auto;" autocomplete="off">
+            <div class="centered-buttons">
+                <button class="cancel">CANCEL</button>
+                <button id="btnLoadFromTable" class="btnOK" onclick="loadFromTable()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save to Table Dialogue -->
+    <div id="saveToTableDiv" class="modal">
+        <div style="width: 500px;" class="modal-content">
+            <h1 style="text-align: center">Save to Table</h1>
+            <label class="key_label">Select a Table:</label>
+            <select id="saveTable" class="viewTable center">
+            </select>
+            <br>
+            <label class="key_label">Enter Partition Key:</label>
+            <input id="txtSaveKey" type="text" class="center" style="width: 180px; margin: 0 auto;" autocomplete="off">
+            <br>
+            <div class="centered-buttons">
+                <button class="cancel">CANCEL</button>
+                <button id="btnLoadFromTable" class="btnOK" onclick="saveToTable()">OK</button>
             </div>
         </div>
     </div>

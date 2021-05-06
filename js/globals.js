@@ -51,7 +51,10 @@ var // container for the data model
     // Show values vs types/templates
     showValues = true,
     // AWS account credentials
-    credentials;
+    credentials,
+    client,
+    dynamodb,
+    accountTables;
 
 const DefaultSchema = {
     indexes: {},
