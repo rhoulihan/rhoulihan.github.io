@@ -54,7 +54,8 @@ var // container for the data model
     credentials,
     client,
     dynamodb,
-    accountTables;
+    accountTables,
+    saveTable;
 
 const DefaultSchema = {
     indexes: {},

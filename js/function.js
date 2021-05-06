@@ -1009,7 +1009,7 @@ function togglePKdiv() {
 
 function saveToTable() {
     var params = {
-        TableName: $("#acctTable").val()
+        TableName: saveTable
     };
     
     describeTable(params);
@@ -1027,17 +1027,19 @@ function saveToTable() {
                 saveToTable();
             else
                 console.log(err);
+        } else {
+            alertData = {};
+            $("#schemaTableDiv").hide();
         }
     });
-
-    alertData = {};
-    $("#schemaTableDiv").hide();
 }
 
 function schemaTable() {
     initDynamoClient();
-    if (alertData.caller == "save")
+    if (alertData.caller == "save") {
+        saveTable = $("#acctTable").val();
         saveToTable();
+    }
     else
         loadFromTable();
 }
