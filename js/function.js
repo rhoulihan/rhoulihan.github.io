@@ -1168,7 +1168,7 @@ function addTable() {
     $("#tbSort").show();
     $("#dropSort").show();
     $("#projection_cfg").hide();
-    $('#createTableOrIndex').modal('toggle');
+    $('#createTableOrIndex').toggle();
 }
 
 /*

@@ -185,7 +185,7 @@ $(document).ready(function() {
             addItem("~new~");
         }
         $("#createTableOrIndex").find('.key_input').val('');
-        $('#createTableOrIndex').modal('toggle');
+        $('#createTableOrIndex').toggle();
 
         findDataModels();
         loadDataModel();
@@ -249,7 +249,7 @@ $(document).ready(function() {
         $("#tbSort").show();
         $("#dropSort").show();
         $("#projection_cfg").show();
-        $('#createTableOrIndex').modal('toggle');
+        $('#createTableOrIndex').toggle();
     });
 
     $("#createModel").on('click', function() {
