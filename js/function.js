@@ -951,7 +951,9 @@ function onReaderLoad(event) {
         credentials = JSON.parse(event.target.result);
         
         initDynamoClient();
-        setCookie("credentials", JSON.stringify(credentials), 365);
+        
+        if ($("#saveCookie").is(":checked"))
+            setCookie("credentials", JSON.stringify(credentials), 365);
     }
     
     $("#importFile").val("");

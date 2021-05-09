@@ -209,6 +209,7 @@ $(document).ready(function() {
 
     $("#loadModel").on('click', function() {
         $("#mySidenav").css("width","0");
+        $("#saveCredsDiv").hide();
         $("#fileDiv").show();
         
         $("#fileType").text("Load Model");
@@ -219,6 +220,8 @@ $(document).ready(function() {
     
     $("#loadCreds").on('click', function() {
         $("#mySidenav").css("width","0");
+        $("#saveCredsDiv").prop('checked', false);
+        $("#saveCredsDiv").show();
         $("#fileDiv").show();
         
         $("#fileType").text("Load Credentials");
