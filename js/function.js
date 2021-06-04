@@ -766,7 +766,7 @@ function generate(isTable) {
                     selectId = cellId[id];
 
                     // wrap the attribute name in a contenteditable div and hook the relevant event handlers
-                    header += '<div id="' + id + '" class="tabable tab' + tabIndex + '" tabindex="0" onfocus="$(\'' + jq(jq(id)) + '\').selectText(' + tabIndex++ + ')" onfocusout="focusOut(\'' + id + '\')" onkeypress="nameAttribute(\'' + id + '\')" contenteditable>';
+                    header += '<div id="' + id + '" class="tabable tab' + tabIndex + ' attribute-context-menu" tabindex="0" onfocus="$(\'' + jq(jq(id)) + '\').selectText(' + tabIndex++ + ')" onfocusout="focusOut(\'' + id + '\')" onkeypress="nameAttribute(\'' + id + '\')" contenteditable>';
                     tail = "</div>";
                 }
 
@@ -1657,6 +1657,21 @@ function showValueTemplate(id) {
 
 // construct the context menus for the table cells
 function buildContextMenus() {
+    var items = {};
+    
+    $.each(datamodel.NonKeyAttributes, function(idx, attr) {
+        items[attr.AttributeName] = {name: attr.AttributeName};
+    })
+    
+    $.contextMenu({
+        selector: '.attribute-context-menu',
+        callback: function(key, options) {
+            $(this).text(key);
+            nameAttribute($(this).attr("id"));
+        },
+        items: items
+    });
+    
     $.contextMenu({
         selector: '.cell-context-menu',
         callback: function(key, options) {
@@ -1707,7 +1722,7 @@ function buildContextMenus() {
         }
     });
 
-    var items = {
+    items = {
         "add": {name: "Add Item", icon: "fa-plus"},
         "paste": {
             name: "Paste Item",
@@ -1771,7 +1786,10 @@ function buildContextMenus() {
     });
 
     items = {
-        "add": {name: "Add Attribute", icon: "fa-plus"},
+        "add": {
+            name: "Add Attribute", 
+            icon: "fa-plus"
+        },
         "cut": {name: "Cut Item", icon: "fa-cut"},
         "copy": {name: "Copy Item", icon: "fa-copy"},
         "delete": {name: "Delete Item", icon: "fa-minus"},
