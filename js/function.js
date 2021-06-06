@@ -38,10 +38,14 @@ function updatePK(id) {
         if (newVal != cellId[id].PK) {
             // snapshot the model state
             makeChange();
+            var first = {};
             // find the items in this partition and update the key values
             $.each(json_data, function(idx, obj) {
                 if ( getValue(obj[table.partition_key]) == cellId[id].PK) {
                     assignValue(obj[table.partition_key], newVal);
+                    
+                    if (jQuery.isEmptyObject(first))
+                        first = obj;
                 }
             });
 
@@ -49,6 +53,7 @@ function updatePK(id) {
             cellId[id].PK = newVal;
             selectId = cellId["cell" + (parseInt(id.substr(4)) + 1)];
             selectId.PK = newVal;
+            selectId.obj = first;
 
             // refresh the table view
             loadDataModel();
@@ -156,13 +161,15 @@ function nameAttribute(id) {
     var keycode = (event.keyCode ? event.keyCode : event.which);
 
     // process the name change if this is an enter or null key
-    if(keycode == '13' || keycode == '0') {
+    if(keycode == '13' || keycode == '0' || selectId.hasOwnProperty("attrName")) {
         // cancel keypress
         event.preventDefault();
 
         // find the attribute name
-        var attribute = $(jq(id)).text(),
+        var attribute = selectId.hasOwnProperty("attrName") ? selectId.attrName : $(jq(id)).text(),
             type = {};
+        
+        delete selectId.attrName;
 
         // find the backing object for the Item
         let obj = cellId[id].obj;
@@ -280,8 +287,8 @@ function importOneTableSchema(text) {
             json_data.push(item);
         }
         expandValueTemplates();
-        buildContextMenus();
         showTable();
+        buildContextMenus();
     } else {
         addItem("~new~");
     }
@@ -397,11 +404,15 @@ function setValue(id) {
                         selectId = {
                             PK: PK,
                             SK: newVal,
-                            attr: "type"
+                            attr: "type",
+                            obj: obj
                         };
                 }
                 else {
-                    selectId = cellId["cell" + (parseInt(id.substr(4)) + 1)];
+                    if ( cellId.hasOwnProperty("cell" + (parseInt(id.substr(4)) + 1)))
+                        selectId = cellId["cell" + (parseInt(id.substr(4)) + 1)];
+                    else
+                        selectId = cellId["cell1"];
                 }
 
                 // snapshot model state and apply the change
@@ -1266,9 +1277,9 @@ function loadDataModel() {
         location.reload();
     }
 
-    buildContextMenus();
     // render the table
     showTable();
+    buildContextMenus();
 }
 
 // download the model in JSON format
@@ -1438,10 +1449,10 @@ function sortObjectList() {
 jQuery.fn.selectText = function(idx){
     idx++;
 
-    if ( cellId.hasOwnProperty("cell" + idx) )
-        selectId = cellId["cell" + idx];
-    else
-        selectId = boundary.first;
+    if ( !cellId.hasOwnProperty("cell" + idx) )
+        idx--;
+    
+    selectId = cellId["cell" + idx];
 
     mouseDown = false;
     var doc = document;
@@ -1657,20 +1668,23 @@ function showValueTemplate(id) {
 
 // construct the context menus for the table cells
 function buildContextMenus() {
+    $.contextMenu( 'destroy' );
     var items = {};
     
     $.each(datamodel.NonKeyAttributes, function(idx, attr) {
-        items[attr.AttributeName] = {name: attr.AttributeName};
+        if (!selectId.obj.hasOwnProperty(attr.AttributeName))
+            items[attr.AttributeName] = {name: attr.AttributeName};
     })
     
-    $.contextMenu({
-        selector: '.attribute-context-menu',
-        callback: function(key, options) {
-            $(this).text(key);
-            nameAttribute($(this).attr("id"));
-        },
-        items: items
-    });
+    if (Object.keys(items).length > 0)
+        $.contextMenu({
+            selector: '.attribute-context-menu',
+            callback: function(key, options) {
+                selectId.attrName = key;
+                nameAttribute($(this).attr("id"));
+            },
+            items: items
+        });
     
     $.contextMenu({
         selector: '.cell-context-menu',
