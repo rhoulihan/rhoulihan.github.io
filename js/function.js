@@ -135,7 +135,7 @@ function findType(id) {
 }
 
 // add an attribute to an Item. Note: this does not change the schema until an attibute name is assigned.
-function addAttribute(id) {
+function addAttribute(id, name) {
     // find the backing object for this Item
     let obj = cellId[id].obj;
     
@@ -148,7 +148,7 @@ function addAttribute(id) {
     } else {
         // snapshot the model state and add a new attribute to the Item
         makeChange();
-        obj["~new~"] = {"S":"~new~"};
+        obj[name] = {"S":"~new~"};
     }
 
     // refresh the table view
@@ -288,7 +288,6 @@ function importOneTableSchema(text) {
         }
         expandValueTemplates();
         showTable();
-        buildContextMenus();
     } else {
         addItem("~new~");
     }
@@ -878,7 +877,7 @@ function buildButtonHtml(id) {
         title2 = "Delete Partition";
 
     if (cellId[id].attr == table.sort_key) {
-        add = '"addAttribute(\'' + id + '\')"';
+        add = '"addAttribute(\'' + id + '\', \'~new~\')"';
         remove = '"deleteItem(\'' + id + '\')"';
         text = cellId[id].SK;
         title1 = "Add Attribute";
@@ -1279,7 +1278,6 @@ function loadDataModel() {
 
     // render the table
     showTable();
-    buildContextMenus();
 }
 
 // download the model in JSON format
@@ -1470,6 +1468,8 @@ jQuery.fn.selectText = function(idx){
         selection.removeAllRanges();
         selection.addRange(range);
     }
+    
+    buildContextMenus();
 };
 
 // create a fake UUID
@@ -1686,6 +1686,75 @@ function buildContextMenus() {
             items: items
         });
     
+    items["new"] = {name: "New attribute..."};
+
+    items = {
+        "add": {
+            name: "Add Attribute", 
+            icon: "fa-plus",
+            items: items
+        },
+        "cut": {name: "Cut Item", icon: "fa-cut"},
+        "copy": {name: "Copy Item", icon: "fa-copy"},
+        "delete": {name: "Delete Item", icon: "fa-minus"},
+        "function": {
+            name: "Edit Value Template",
+            icon: "fa-wrench"
+        },
+        "insert": {
+            name: "Generate Value",
+            items: {
+                "uuid": { name: "UUID", icon: "fa-fingerprint" },
+                "date": { name: "ISO8601 Date String", icon: "fa-clock" }
+            },
+            icon: "fa-clone"
+        }
+    };
+
+    $.contextMenu({
+        selector: '.SK-context-menu',
+        callback: function(key, options) {
+            switch (key) {
+                case "date":
+                    $(this).text(new Date().toISOString().split(".")[0]);
+                    selectId.SK = $(this).text();
+                    setValue($(this).attr("id"));
+                    break;
+
+                case "uuid":
+                    $(this).text(fakeUUID());
+                    selectId.SK = $(this).text();
+                    setValue($(this).attr("id"));
+                    break;
+
+                case "cut":
+                    alertData.caller = "cutItem";
+                    alertData.data = $(this).attr("id");
+                    postResponse();
+                    break;
+
+                case "copy":
+                    alertData.caller = "copyItem";
+                    alertData.data = $(this).attr("id");
+                    postResponse();
+                    break;
+
+                case "delete":
+                    deleteItem($(this).attr("id"));
+                    break;
+
+                case "function":
+                    showValueTemplate($(this).attr("id"));
+                    break;
+                    
+                default:
+                    addAttribute($(this).attr("id"), key == "new" ? "~new~" : key);
+                    break;
+            }
+        },
+        items: items
+    });
+    
     $.contextMenu({
         selector: '.cell-context-menu',
         callback: function(key, options) {
@@ -1825,10 +1894,6 @@ function buildContextMenus() {
         selector: '.SK-context-menu',
         callback: function(key, options) {
             switch (key) {
-                case "add":
-                    addAttribute($(this).attr("id"));
-                    break;
-
                 case "date":
                     $(this).text(new Date().toISOString().split(".")[0]);
                     selectId.SK = $(this).text();
